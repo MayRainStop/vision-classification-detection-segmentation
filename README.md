@@ -15,7 +15,7 @@
 实验报告：
 - `docs/report.pdf`
 - GitHub Repo：`https://github.com/MayRainStop/vision-classification-detection-segmentation`
-- 模型权重与大文件下载地址：`TODO`
+- 模型权重与大文件下载地址：`https://drive.google.com/drive/folders/11rpbLTSrK4TePYEZGxlLH_xuVx3fbTB9?usp=sharing`
 
 ## 仓库目录结构
 
@@ -230,4 +230,3 @@ best validation mIoU = 0.3055
 - `tasks/task3_semantic_segmentation/runs/loss_comparison/miou_loss_comparison.png`：三种损失函数的 mIoU 与 loss 对比。
 - `tasks/task3_semantic_segmentation/runs/loss_comparison/confusion_matrix_comparison.png`：三种损失函数的混淆矩阵对比。
 - `tasks/task3_semantic_segmentation/runs/loss_comparison/0000382_prediction_comparison.png`：样例预测对比图。
-
