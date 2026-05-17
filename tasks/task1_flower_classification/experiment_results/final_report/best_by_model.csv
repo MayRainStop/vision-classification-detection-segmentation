@@ -1,0 +1,11 @@
+grid,status,model,pretrained,learning_rate,weight_decay,batch_size,label_smoothing,epochs_completed,best_epoch,best_val_acc,test_loss,test_acc,early_stopped,return_code,run_name
+core_grid,skipped,resnet18,False,0.001,0.0001,32,0.1,112,102,0.5911764705882353,2.543011942846559,0.5272402016588064,True,0,resnet18_scratch_lr0p001_wd0p0001_bs32_ls0p1
+core_grid,skipped,resnet18,True,0.0003,0.0001,32,0.1,52,42,0.9294117647058824,1.350648869623264,0.8996584810538298,True,0,resnet18_pretrained_lr0p0003_wd0p0001_bs32_ls0p1
+core_grid,skipped,resnet18_cbam,True,0.0003,0.0001,64,0.1,54,44,0.9411764705882353,1.3567752235981483,0.9086030248820947,True,0,resnet18_cbam_pretrained_lr0p0003_wd0p0001_bs64_ls0p1
+core_grid,skipped,resnet18_se,True,0.0003,0.0001,32,0.1,45,35,0.9362745098039216,1.3235667183508155,0.906488859977232,True,0,resnet18_se_pretrained_lr0p0003_wd0p0001_bs32_ls0p1
+core_grid,completed,resnet34,False,0.0003,0.0001,32,0.1,106,96,0.6166666666666667,2.4261471416760623,0.5543990892828102,True,0,resnet34_scratch_lr0p0003_wd0p0001_bs32_ls0p1
+core_grid,skipped,resnet34,True,0.0003,0.0001,64,0.1,38,28,0.9264705882352942,1.273906662136893,0.8957554073833144,True,0,resnet34_pretrained_lr0p0003_wd0p0001_bs64_ls0p1
+core_grid,skipped,resnet34_cbam,True,0.0003,0.0001,64,0.1,53,43,0.9392156862745098,1.1663724837952232,0.9214506423808749,True,0,resnet34_cbam_pretrained_lr0p0003_wd0p0001_bs64_ls0p1
+core_grid,skipped,resnet34_se,True,0.0003,0.0001,32,0.1,41,31,0.9343137254901961,1.1818373642581947,0.8972190600097577,True,0,resnet34_se_pretrained_lr0p0003_wd0p0001_bs32_ls0p1
+transformer_grid,completed,swin_t,True,0.0001,0.0001,16,0.1,38,28,0.9598039215686275,1.064297368728469,0.9425922914295007,True,0,swin_t_pretrained_lr0p0001_wd0p0001_bs16_ls0p1
+transformer_grid,completed,vit_b_16,True,0.0001,0.0001,32,0.1,21,11,0.95,1.242363691678918,0.9282810213042771,True,0,vit_b_16_pretrained_lr0p0001_wd0p0001_bs32_ls0p1

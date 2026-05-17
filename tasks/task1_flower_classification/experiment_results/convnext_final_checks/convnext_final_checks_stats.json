@@ -1,0 +1,30 @@
+[
+  {
+    "group": "convnext_tiny_224_best10",
+    "model": "convnext_tiny",
+    "num_runs": 10,
+    "image_size": 224,
+    "learning_rate": 0.0001,
+    "weight_decay": 1e-05,
+    "batch_size": 16,
+    "label_smoothing": 0.1,
+    "val_acc_mean": 0.9663725490196079,
+    "val_acc_std": 0.004529416480394402,
+    "test_acc_mean": 0.9471296145714752,
+    "test_acc_std": 0.0031229953370962224
+  },
+  {
+    "group": "convnext_tiny_384_best3",
+    "model": "convnext_tiny",
+    "num_runs": 3,
+    "image_size": 384,
+    "learning_rate": 0.0001,
+    "weight_decay": 1e-05,
+    "batch_size": 16,
+    "label_smoothing": 0.1,
+    "val_acc_mean": 0.9751633986928104,
+    "val_acc_std": 0.0039622077297327115,
+    "test_acc_mean": 0.955494118284816,
+    "test_acc_std": 0.0046151236848902865
+  }
+]

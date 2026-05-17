@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 16,
+    "data_root": ".",
+    "device": null,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_patience": 15,
+    "epochs": 200,
+    "freeze_backbone": false,
+    "image_size": 224,
+    "label_smoothing": 0.0,
+    "limit_test": null,
+    "limit_train": null,
+    "limit_val": null,
+    "lr": 5e-05,
+    "model": "efficientnet_b0",
+    "no_pretrained": false,
+    "num_workers": 8,
+    "output_dir": "experiment_results/extended_cnn_grid",
+    "run_name": "efficientnet_b0_pretrained_lr5e-05_wd0p0001_bs16_ls0",
+    "seed": 42,
+    "use_wandb": false,
+    "weight_decay": 0.0001
+  },
+  "best_epoch": 48,
+  "best_val_acc": 0.9382352941176471,
+  "early_stopped": true,
+  "epochs_completed": 63,
+  "test_acc": 0.9164091722231257,
+  "test_loss": 0.34229897691827804
+}

@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 16,
+    "data_root": ".",
+    "device": null,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_patience": 15,
+    "epochs": 200,
+    "freeze_backbone": false,
+    "image_size": 384,
+    "label_smoothing": 0.1,
+    "limit_test": null,
+    "limit_train": null,
+    "limit_val": null,
+    "lr": 0.0003,
+    "model": "convnext_tiny",
+    "no_pretrained": false,
+    "num_workers": 8,
+    "output_dir": "experiment_results/convnext_384_expansion",
+    "run_name": "convnext_tiny_384_tune_top_lr0p0003_wd1e-05_seed123_bs16_ls0p1",
+    "seed": 123,
+    "use_wandb": false,
+    "weight_decay": 1e-05
+  },
+  "best_epoch": 15,
+  "best_val_acc": 0.961764705882353,
+  "early_stopped": true,
+  "epochs_completed": 30,
+  "test_acc": 0.9382013335501708,
+  "test_loss": 1.045097150256293
+}

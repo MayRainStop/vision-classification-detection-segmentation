@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 16,
+    "data_root": ".",
+    "device": null,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_patience": 10,
+    "epochs": 200,
+    "freeze_backbone": false,
+    "image_size": 224,
+    "label_smoothing": 0.0,
+    "limit_test": null,
+    "limit_train": null,
+    "limit_val": null,
+    "lr": 0.0003,
+    "model": "swin_t",
+    "no_pretrained": false,
+    "num_workers": 8,
+    "output_dir": "experiment_results/transformer_grid",
+    "run_name": "swin_t_pretrained_lr0p0003_wd0p0001_bs16_ls0",
+    "seed": 42,
+    "use_wandb": false,
+    "weight_decay": 0.0001
+  },
+  "best_epoch": 7,
+  "best_val_acc": 0.8990196078431373,
+  "early_stopped": true,
+  "epochs_completed": 17,
+  "test_acc": 0.8638803057407709,
+  "test_loss": 0.49980542722302135
+}

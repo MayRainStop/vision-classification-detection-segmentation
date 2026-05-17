@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 64,
+    "data_root": ".",
+    "device": null,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_patience": 10,
+    "epochs": 200,
+    "freeze_backbone": false,
+    "image_size": 224,
+    "label_smoothing": 0.1,
+    "limit_test": null,
+    "limit_train": null,
+    "limit_val": null,
+    "lr": 0.0003,
+    "model": "resnet34",
+    "no_pretrained": false,
+    "num_workers": 8,
+    "output_dir": "experiment_results/core_grid",
+    "run_name": "resnet34_pretrained_lr0p0003_wd0p0001_bs64_ls0p1",
+    "seed": 42,
+    "use_wandb": false,
+    "weight_decay": 0.0001
+  },
+  "best_epoch": 28,
+  "best_val_acc": 0.9264705882352942,
+  "early_stopped": true,
+  "epochs_completed": 38,
+  "test_acc": 0.8957554073833144,
+  "test_loss": 1.273906662136893
+}

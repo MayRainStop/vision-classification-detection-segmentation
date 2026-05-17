@@ -1,0 +1,54 @@
+[
+  {
+    "group": "convnext_tiny_lr0p0001_wd1e-05_bs16",
+    "model": "convnext_tiny",
+    "num_runs": 3,
+    "learning_rate": 0.0001,
+    "weight_decay": 1e-05,
+    "batch_size": 16,
+    "label_smoothing": 0.1,
+    "val_acc_mean": 0.9663398692810458,
+    "val_acc_std": 0.0037117048011766365,
+    "test_acc_mean": 0.9472000867349705,
+    "test_acc_std": 0.00040927166668133715
+  },
+  {
+    "group": "convnext_tiny_wd1e-05",
+    "model": "convnext_tiny",
+    "num_runs": 3,
+    "learning_rate": 0.0003,
+    "weight_decay": 1e-05,
+    "batch_size": 32,
+    "label_smoothing": 0.1,
+    "val_acc_mean": 0.9640522875816994,
+    "val_acc_std": 0.0044208330910028215,
+    "test_acc_mean": 0.9462785276738765,
+    "test_acc_std": 0.008482162112729473
+  },
+  {
+    "group": "swin_t_best_bs16",
+    "model": "swin_t",
+    "num_runs": 3,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "label_smoothing": 0.1,
+    "val_acc_mean": 0.9604575163398693,
+    "val_acc_std": 0.003151519856533634,
+    "test_acc_mean": 0.9398276142462189,
+    "test_acc_std": 0.0025559007392261693
+  },
+  {
+    "group": "swin_t_best_bs32",
+    "model": "swin_t",
+    "num_runs": 3,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "batch_size": 32,
+    "label_smoothing": 0.1,
+    "val_acc_mean": 0.9545751633986929,
+    "val_acc_std": 0.009672319337875025,
+    "test_acc_mean": 0.9281183932346723,
+    "test_acc_std": 0.015777437418292264
+  }
+]

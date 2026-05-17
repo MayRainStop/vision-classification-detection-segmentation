@@ -1,0 +1,14 @@
+group,source,model,run_name,seed,image_size,learning_rate,weight_decay,batch_size,label_smoothing,best_epoch,epochs_completed,best_val_acc,test_acc,test_loss
+convnext_tiny_224_best10,supplementary_repeats,convnext_tiny,convnext_tiny_lr0p0001_wd1e-05_bs16_seed7_ls0p1,7,224,0.0001,1e-05,16,0.1,24,39,0.9647058823529412,0.946820621239226,1.0621580404951467
+convnext_tiny_224_best10,convnext_final_checks,convnext_tiny,convnext_tiny_224_best_seed42_lr0p0001_wd1e-05_bs16_ls0p1,42,224,0.0001,1e-05,16,0.1,34,49,0.9656862745098039,0.9487721580744837,1.066160739738004
+convnext_tiny_224_best10,convnext_final_checks,convnext_tiny,convnext_tiny_224_best_seed99_lr0p0001_wd1e-05_bs16_ls0p1,99,224,0.0001,1e-05,16,0.1,22,37,0.9656862745098039,0.9518620913969751,1.0772871674221887
+convnext_tiny_224_best10,supplementary_repeats,convnext_tiny,convnext_tiny_lr0p0001_wd1e-05_bs16_seed123_ls0p1,123,224,0.0001,1e-05,16,0.1,24,39,0.9637254901960784,0.94763376158725,1.0789830011649915
+convnext_tiny_224_best10,convnext_final_checks,convnext_tiny,convnext_tiny_224_best_seed314_lr0p0001_wd1e-05_bs16_ls0p1,314,224,0.0001,1e-05,16,0.1,34,49,0.9725490196078431,0.9411286388030574,1.0721388523278925
+convnext_tiny_224_best10,convnext_final_checks,convnext_tiny,convnext_tiny_224_best_seed512_lr0p0001_wd1e-05_bs16_ls0p1,512,224,0.0001,1e-05,16,0.1,27,42,0.9666666666666667,0.9495852984225077,1.071711090953006
+convnext_tiny_224_best10,convnext_final_checks,convnext_tiny,convnext_tiny_224_best_seed1009_lr0p0001_wd1e-05_bs16_ls0p1,1009,224,0.0001,1e-05,16,0.1,16,31,0.9656862745098039,0.9430801756383151,1.1055338180516867
+convnext_tiny_224_best10,convnext_final_checks,convnext_tiny,convnext_tiny_224_best_seed2024_lr0p0001_wd1e-05_bs16_ls0p1,2024,224,0.0001,1e-05,16,0.1,13,28,0.9568627450980393,0.9463327370304114,1.1254290736754904
+convnext_tiny_224_best10,supplementary_repeats,convnext_tiny,convnext_tiny_lr0p0001_wd1e-05_bs16_seed2026_ls0p1,2026,224,0.0001,1e-05,16,0.1,31,46,0.9705882352941176,0.9471458773784355,1.070198110825338
+convnext_tiny_224_best10,convnext_final_checks,convnext_tiny,convnext_tiny_224_best_seed4096_lr0p0001_wd1e-05_bs16_ls0p1,4096,224,0.0001,1e-05,16,0.1,32,47,0.9715686274509804,0.9489347861440884,1.0605123066906037
+convnext_tiny_384_best3,convnext_final_checks,convnext_tiny,convnext_tiny_384_best_seed7_lr0p0001_wd1e-05_bs16_ls0p1,7,384,0.0001,1e-05,16,0.1,30,45,0.9705882352941176,0.9513742071881607,1.044970313346101
+convnext_tiny_384_best3,convnext_final_checks,convnext_tiny,convnext_tiny_384_best_seed123_lr0p0001_wd1e-05_bs16_ls0p1,123,384,0.0001,1e-05,16,0.1,51,66,0.9774509803921568,0.9604813790860303,0.9862075667882241
+convnext_tiny_384_best3,convnext_final_checks,convnext_tiny,convnext_tiny_384_best_seed2026_lr0p0001_wd1e-05_bs16_ls0p1,2026,384,0.0001,1e-05,16,0.1,31,46,0.9774509803921568,0.954626768580257,1.0501248148674498

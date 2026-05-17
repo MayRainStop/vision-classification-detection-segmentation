@@ -1,0 +1,45 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local data files for Oxford 102 Flowers.
+HW2_深度学习与空间智能.pdf
+jpg/
+segmim/
+*.tgz
+*.tar
+*.tar.gz
+distancematrices102.mat
+autodl_full_sync/
+autodl_selected_sync/
+HW2_large_artifacts/
+
+# HW2 task-local large data and generated artifacts.
+tasks/task1_flower_classification/data/jpg/
+tasks/task1_flower_classification/data/*.tgz
+tasks/task1_flower_classification/data/*.mat
+tasks/task2_road_vehicle_detection/train/
+tasks/task2_road_vehicle_detection/valid/
+tasks/task2_road_vehicle_detection/*.mp4
+tasks/task2_road_vehicle_detection/train_results/weights/
+tasks/task3_semantic_segmentation/runs/**/best.pt
+tasks/task3_semantic_segmentation/runs/**/last.pt
+
+# Training outputs.
+/runs/
+/runs_from_scratch/
+/grid_runs/
+/smoke_runs/
+/smoke_runs_v2/
+/smoke_pretrained_runs/
+*.pt
+*.pth
+
+# Temporary folders created by local tests or notebooks.
+tmp*/
+temp*/
+
+# LaTeX build byproducts; keep docs/report.tex and docs/report.pdf.
+docs/*.aux
+docs/*.log
+docs/*.out

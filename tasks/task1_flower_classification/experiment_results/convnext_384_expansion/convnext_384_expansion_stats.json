@@ -1,0 +1,30 @@
+[
+  {
+    "group": "convnext_tiny_384_best10",
+    "model": "convnext_tiny",
+    "num_runs": 10,
+    "image_size": 384,
+    "learning_rate": 0.0001,
+    "weight_decay": 1e-05,
+    "batch_size": 16,
+    "label_smoothing": 0.1,
+    "val_acc_mean": 0.972843137254902,
+    "val_acc_std": 0.004804032722914817,
+    "test_acc_mean": 0.9560253699788583,
+    "test_acc_std": 0.00605409550135102
+  },
+  {
+    "group": "convnext_tiny_384_top_challenger3_lr0p0003_wd1e-05",
+    "model": "convnext_tiny",
+    "num_runs": 3,
+    "image_size": 384,
+    "learning_rate": 0.0003,
+    "weight_decay": 1e-05,
+    "batch_size": 16,
+    "label_smoothing": 0.1,
+    "val_acc_mean": 0.9663398692810458,
+    "val_acc_std": 0.006303039713067268,
+    "test_acc_mean": 0.9428633382121755,
+    "test_acc_std": 0.0043526433926700135
+  }
+]

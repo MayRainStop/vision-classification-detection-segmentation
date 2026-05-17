@@ -1,0 +1,6 @@
+result_type,model,image_size,pretrained,learning_rate,weight_decay,batch_size,label_smoothing,num_runs,val_acc,test_acc,val_acc_mean,val_acc_std,test_acc_mean,test_acc_std,notes
+final_selected_stable_config,convnext_tiny,384,True,0.0001,1e-05,16,0.1,10,,,0.972843137254902,0.004804032722914817,0.9560253699788583,0.00605409550135102,"Final selected configuration, averaged over 10 seeds."
+best_single_seed_inside_final_config,convnext_tiny,384,True,0.0001,1e-05,16,0.1,1,0.9774509803921568,0.965034965034965,,,,,Best test-accuracy seed in final 10-seed group: seed 314.
+best_224px_stable_config,convnext_tiny,224,True,0.0001,1e-05,16,0.1,10,,,0.9663725490196079,0.004529416480394402,0.9471296145714752,0.0031229953370962224,Stable 224px ConvNeXt-Tiny comparison.
+best_swin_repeat_config,swin_t,224,True,0.0001,0.0001,16,0.1,3,,,0.9604575163398693,0.003151519856533634,0.9398276142462189,0.0025559007392261693,Three-seed repeat for the previous Swin-T best configuration.
+extended_cnn_grid_best_single_run,convnext_tiny,224,True,0.0003,0.0001,32,0.1,1,0.9666666666666667,0.9466579931696211,,,,,convnext_tiny_pretrained_lr0p0003_wd0p0001_bs32_ls0p1

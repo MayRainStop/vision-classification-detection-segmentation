@@ -1,0 +1,4 @@
+model,run_name,seed,learning_rate,weight_decay,batch_size,label_smoothing,best_epoch,epochs_completed,best_val_acc,test_acc,test_loss
+convnext_tiny,convnext_tiny_best_seed7_lr0p0003_wd0p0001_bs32_ls0p1,7,0.0003,0.0001,32,0.1,8,23,0.9598039215686275,0.9383639616197755,1.1041483300878743
+convnext_tiny,convnext_tiny_best_seed123_lr0p0003_wd0p0001_bs32_ls0p1,123,0.0003,0.0001,32,0.1,31,46,0.9627450980392157,0.9440559440559441,1.0231278275334559
+convnext_tiny,convnext_tiny_best_seed2026_lr0p0003_wd0p0001_bs32_ls0p1,2026,0.0003,0.0001,32,0.1,36,51,0.9686274509803922,0.9549520247194666,0.9816363169364104

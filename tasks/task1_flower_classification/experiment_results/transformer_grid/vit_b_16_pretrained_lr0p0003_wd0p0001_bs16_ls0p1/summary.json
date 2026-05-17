@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 16,
+    "data_root": ".",
+    "device": null,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_patience": 10,
+    "epochs": 200,
+    "freeze_backbone": false,
+    "image_size": 224,
+    "label_smoothing": 0.1,
+    "limit_test": null,
+    "limit_train": null,
+    "limit_val": null,
+    "lr": 0.0003,
+    "model": "vit_b_16",
+    "no_pretrained": false,
+    "num_workers": 8,
+    "output_dir": "experiment_results/transformer_grid",
+    "run_name": "vit_b_16_pretrained_lr0p0003_wd0p0001_bs16_ls0p1",
+    "seed": 42,
+    "use_wandb": false,
+    "weight_decay": 0.0001
+  },
+  "best_epoch": 29,
+  "best_val_acc": 0.42254901960784313,
+  "early_stopped": true,
+  "epochs_completed": 39,
+  "test_acc": 0.38656692145064236,
+  "test_loss": 3.1803870622773234
+}

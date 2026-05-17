@@ -1,0 +1,3 @@
+group,model,num_runs,image_size,learning_rate,weight_decay,batch_size,label_smoothing,val_acc_mean,val_acc_std,test_acc_mean,test_acc_std
+convnext_tiny_384_best10,convnext_tiny,10,384,0.0001,1e-05,16,0.1,0.972843137254902,0.004804032722914817,0.9560253699788583,0.00605409550135102
+convnext_tiny_384_top_challenger3_lr0p0003_wd1e-05,convnext_tiny,3,384,0.0003,1e-05,16,0.1,0.9663398692810458,0.006303039713067268,0.9428633382121755,0.0043526433926700135

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deep-learning-spatial-intelligence-hw2"
+version = "0.1.0"
+description = "Deep Learning and Spatial Intelligence HW2 tasks: classification, detection/tracking, and segmentation."
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pillow",
+    "torch",
+    "torchvision",
+    "matplotlib",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+logging = ["wandb"]
+detection = ["ultralytics", "opencv-python", "wandb"]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["tasks/task1_flower_classification/src"]

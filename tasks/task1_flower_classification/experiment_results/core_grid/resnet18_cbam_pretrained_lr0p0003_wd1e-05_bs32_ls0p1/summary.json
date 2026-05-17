@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 32,
+    "data_root": ".",
+    "device": null,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_patience": 10,
+    "epochs": 200,
+    "freeze_backbone": false,
+    "image_size": 224,
+    "label_smoothing": 0.1,
+    "limit_test": null,
+    "limit_train": null,
+    "limit_val": null,
+    "lr": 0.0003,
+    "model": "resnet18_cbam",
+    "no_pretrained": false,
+    "num_workers": 8,
+    "output_dir": "experiment_results/core_grid",
+    "run_name": "resnet18_cbam_pretrained_lr0p0003_wd1e-05_bs32_ls0p1",
+    "seed": 42,
+    "use_wandb": false,
+    "weight_decay": 1e-05
+  },
+  "best_epoch": 21,
+  "best_val_acc": 0.9215686274509803,
+  "early_stopped": true,
+  "epochs_completed": 31,
+  "test_acc": 0.8964059196617337,
+  "test_loss": 1.3236964512770883
+}

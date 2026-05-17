@@ -1,0 +1,102 @@
+{
+  "model": "convnext_tiny",
+  "image_size": 384,
+  "checkpoint": "experiment_results/convnext_384_expansion/convnext_tiny_384_best_seed314_lr0p0001_wd1e-05_bs16_ls0p1/best.pt",
+  "test_loss": 1.034705895072058,
+  "test_acc": 0.965034965034965,
+  "test_size": 6149,
+  "mistakes": 215,
+  "correct": 5934,
+  "top_confusions": [
+    {
+      "rank": 1,
+      "true_class": 96,
+      "pred_class": 97,
+      "count": 10,
+      "true_class_total": 71,
+      "confusion_rate": 0.14084507042253522,
+      "example_images": "image_07675.jpg; image_07676.jpg; image_07677.jpg; image_07678.jpg; image_07679.jpg"
+    },
+    {
+      "rank": 2,
+      "true_class": 53,
+      "pred_class": 46,
+      "count": 9,
+      "true_class_total": 73,
+      "confusion_rate": 0.1232876712328767,
+      "example_images": "image_03641.jpg; image_03642.jpg; image_03643.jpg; image_03648.jpg; image_03649.jpg"
+    },
+    {
+      "rank": 3,
+      "true_class": 51,
+      "pred_class": 83,
+      "count": 7,
+      "true_class_total": 238,
+      "confusion_rate": 0.029411764705882353,
+      "example_images": "image_03914.jpg; image_01337.jpg; image_03962.jpg; image_01341.jpg; image_03984.jpg"
+    },
+    {
+      "rank": 4,
+      "true_class": 23,
+      "pred_class": 97,
+      "count": 5,
+      "true_class_total": 71,
+      "confusion_rate": 0.07042253521126761,
+      "example_images": "image_03370.jpg; image_03372.jpg; image_03378.jpg; image_03385.jpg; image_03408.jpg"
+    },
+    {
+      "rank": 5,
+      "true_class": 50,
+      "pred_class": 12,
+      "count": 4,
+      "true_class_total": 72,
+      "confusion_rate": 0.05555555555555555,
+      "example_images": "image_06302.jpg; image_06316.jpg; image_06334.jpg; image_06341.jpg"
+    },
+    {
+      "rank": 6,
+      "true_class": 51,
+      "pred_class": 75,
+      "count": 4,
+      "true_class_total": 238,
+      "confusion_rate": 0.01680672268907563,
+      "example_images": "image_01320.jpg; image_01322.jpg; image_03952.jpg; image_01480.jpg"
+    },
+    {
+      "rank": 7,
+      "true_class": 51,
+      "pred_class": 1,
+      "count": 4,
+      "true_class_total": 238,
+      "confusion_rate": 0.01680672268907563,
+      "example_images": "image_03980.jpg; image_03921.jpg; image_03986.jpg; image_03947.jpg"
+    },
+    {
+      "rank": 8,
+      "true_class": 51,
+      "pred_class": 19,
+      "count": 4,
+      "true_class_total": 238,
+      "confusion_rate": 0.01680672268907563,
+      "example_images": "image_03927.jpg; image_03942.jpg; image_03951.jpg; image_03933.jpg"
+    },
+    {
+      "rank": 9,
+      "true_class": 89,
+      "pred_class": 97,
+      "count": 4,
+      "true_class_total": 164,
+      "confusion_rate": 0.024390243902439025,
+      "example_images": "image_00604.jpg; image_00620.jpg; image_00757.jpg; image_00778.jpg"
+    },
+    {
+      "rank": 10,
+      "true_class": 11,
+      "pred_class": 4,
+      "count": 3,
+      "true_class_total": 67,
+      "confusion_rate": 0.04477611940298507,
+      "example_images": "image_03109.jpg; image_03112.jpg; image_03139.jpg"
+    }
+  ]
+}

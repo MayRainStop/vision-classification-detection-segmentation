@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 32,
+    "data_root": ".",
+    "device": null,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_patience": 15,
+    "epochs": 200,
+    "freeze_backbone": false,
+    "image_size": 224,
+    "label_smoothing": 0.1,
+    "limit_test": null,
+    "limit_train": null,
+    "limit_val": null,
+    "lr": 5e-05,
+    "model": "resnet101",
+    "no_pretrained": false,
+    "num_workers": 8,
+    "output_dir": "experiment_results/extended_cnn_grid",
+    "run_name": "resnet101_pretrained_lr5e-05_wd0p0001_bs32_ls0p1",
+    "seed": 42,
+    "use_wandb": false,
+    "weight_decay": 0.0001
+  },
+  "best_epoch": 53,
+  "best_val_acc": 0.9333333333333333,
+  "early_stopped": true,
+  "epochs_completed": 68,
+  "test_acc": 0.9128313546918199,
+  "test_loss": 1.1917607282832263
+}

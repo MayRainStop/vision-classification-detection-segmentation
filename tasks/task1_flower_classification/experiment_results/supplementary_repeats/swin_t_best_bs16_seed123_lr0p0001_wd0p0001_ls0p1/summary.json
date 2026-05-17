@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 16,
+    "data_root": ".",
+    "device": null,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_patience": 10,
+    "epochs": 200,
+    "freeze_backbone": false,
+    "image_size": 224,
+    "label_smoothing": 0.1,
+    "limit_test": null,
+    "limit_train": null,
+    "limit_val": null,
+    "lr": 0.0001,
+    "model": "swin_t",
+    "no_pretrained": false,
+    "num_workers": 8,
+    "output_dir": "experiment_results/supplementary_repeats",
+    "run_name": "swin_t_best_bs16_seed123_lr0p0001_wd0p0001_ls0p1",
+    "seed": 123,
+    "use_wandb": false,
+    "weight_decay": 0.0001
+  },
+  "best_epoch": 23,
+  "best_val_acc": 0.9627450980392157,
+  "early_stopped": true,
+  "epochs_completed": 33,
+  "test_acc": 0.9386892177589852,
+  "test_loss": 1.0996289959785939
+}

@@ -1,0 +1,15 @@
+{
+  "model": "convnext_tiny",
+  "run_name": "convnext_tiny_pretrained_lr0p0003_wd0p0001_bs32_ls0p1",
+  "pretrained": true,
+  "learning_rate": 0.0003,
+  "weight_decay": 0.0001,
+  "batch_size": 32,
+  "label_smoothing": 0.1,
+  "best_epoch": 17,
+  "epochs_completed": 32,
+  "best_val_acc": 0.9666666666666667,
+  "test_acc": 0.9466579931696211,
+  "test_loss": 1.064162149014832,
+  "summary_path": "experiment_results/extended_cnn_grid/convnext_tiny_pretrained_lr0p0003_wd0p0001_bs32_ls0p1/summary.json"
+}
