@@ -37,7 +37,7 @@
     \vspace{1.0em}
     {\zihao{2}\bfseries 基于深度神经网络的视觉识别实验报告\par}
     \vspace{0.4em}
-    {\zihao{3}\bfseries 花卉图像分类、道路车辆检测与语义分割\par}
+    {\zihao{3}\bfseries 花卉图像分类、道路车辆检测与图像分割\par}
 \end{center}
 
 \vspace{0.6em}
@@ -50,7 +50,7 @@
         \midrule
         朱宇玄 & 25110980033 & 花卉图像分类实验 \\
         钱玲萱 & 24110980018 & 道路车辆检测与跟踪实验 \\
-        吉张林 & 25110980010 & 语义分割实验 \\
+        吉张林 & 25110980010 & 图像分割实验 \\
         \bottomrule
     \end{tabular}
 \end{center}
@@ -67,14 +67,14 @@
 \vspace{0.6em}
 
 \begin{abstract}
-本文围绕三类典型视觉识别问题展开实验：细粒度花卉图像分类、道路车辆检测与跟踪、场景语义分割。花卉分类实验使用 Oxford 102 Flowers 数据集，系统比较 ResNet baseline、ImageNet 预训练与从零训练、SE/CBAM 注意力模块、ViT/Swin Transformer 以及 ConvNeXt 等现代卷积网络；最终 ConvNeXt-Tiny 在 384px 输入和 10 个随机种子下取得 \accpm{95.60}{0.61} 的测试准确率。车辆检测实验使用 YOLOv8s 在道路车辆数据集上训练检测器，验证集 mAP50 为 0.520，并结合 ByteTrack 完成跟踪 ID 显示、越线计数和遮挡失败分析。语义分割实验从零实现轻量 U-Net，在 Stanford Background / ICCV09 风格数据上比较 Cross-Entropy、Dice 与组合损失，组合损失取得最高验证集 mIoU 0.6531。实验结果表明，预训练特征、注意力机制、输入分辨率、检测稳定性和区域重叠损失都会显著影响视觉识别系统的最终泛化性能。
+本文围绕三类典型视觉识别问题展开实验：细粒度花卉图像分类、道路车辆检测与跟踪、图像分割。花卉分类实验使用 Oxford 102 Flowers 数据集，系统比较 ResNet baseline、ImageNet 预训练与从零训练、SE/CBAM 注意力模块、ViT/Swin Transformer 以及 ConvNeXt 等现代卷积网络；最终 ConvNeXt-Tiny 在 384px 输入和 10 个随机种子下取得 \accpm{95.60}{0.61} 的测试准确率。车辆检测实验使用 YOLOv8s 在道路车辆数据集上训练检测器，验证集 mAP50 为 0.520，并结合 ByteTrack 完成跟踪 ID 显示、越线计数和遮挡失败分析。图像分割实验从零实现轻量 U-Net，在 Stanford Background / ICCV09 风格数据上比较 Cross-Entropy、Dice 与组合损失，组合损失取得最高验证集 mIoU 0.6531。实验结果表明，预训练特征、注意力机制、输入分辨率、检测稳定性和区域重叠损失都会显著影响视觉识别系统的最终泛化性能。
 \end{abstract}
 
 \section{引言}
 
-深度学习视觉系统通常可以分为图像级识别、目标级检测跟踪和像素级语义理解三个层次。图像分类关注整张图片属于哪个类别；目标检测需要在图像或视频中定位多个实例；语义分割则要求对每个像素进行类别判定。三类问题对应不同的监督信号、模型结构和评价指标，也体现了深度神经网络在空间智能问题中的不同建模方式。
+深度学习视觉系统通常可以分为图像级识别、目标级检测跟踪和像素级语义理解三个层次。图像分类关注整张图片属于哪个类别；目标检测需要在图像或视频中定位多个实例；图像分割则要求对每个像素进行类别判定。三类问题对应不同的监督信号、模型结构和评价指标，也体现了深度神经网络在空间智能问题中的不同建模方式。
 
-本文实验分为三个部分。第一部分研究 Oxford 102 Flowers 细粒度图像分类，该数据集每类训练样本很少，适合分析 ImageNet 预训练、注意力模块和现代 backbone 对小样本分类的影响。第二部分研究道路车辆检测与跟踪，重点是 YOLOv8 检测器、ByteTrack 轨迹维持和遮挡场景下的 ID 跳变。第三部分研究语义分割，使用手写 U-Net 比较不同损失函数对 mIoU 的影响。
+本文实验分为三个部分。第一部分研究 Oxford 102 Flowers 细粒度图像分类，该数据集每类训练样本很少，适合分析 ImageNet 预训练、注意力模块和现代 backbone 对小样本分类的影响。第二部分研究道路车辆检测与跟踪，重点是 YOLOv8 检测器、ByteTrack 轨迹维持和遮挡场景下的 ID 跳变。第三部分研究图像分割，使用手写 U-Net 比较不同损失函数对 mIoU 的影响。
 
 本文的写作重点放在实验方法、训练设置、定量结果和结果分析上。所有表格中的 accuracy 均为百分比；检测结果使用 precision、recall 和 mAP；分割结果使用 pixel accuracy 和 mIoU。
 
@@ -453,12 +453,12 @@ Transformer 组整体优于基础 CNN 组。ViT-B/16 的最优测试准确率为
     \label{fig:classification-top-confusions}
 \end{figure}
 
-图 \ref{fig:classification-misclassified-examples} 进一步列出了一组高置信度错分样例。可以看到，这些错误通常不是由图像完全失真导致的，而是与花瓣形状、花心结构、颜色组合、拍摄角度和遮挡等细节有关。例如第 96 类多次被预测为第 97 类，样例中花瓣轮廓和颜色分布非常接近；第 50 类与第 12 类的混淆则体现出黄色花卉在局部纹理和花型相似时仍然具有较强挑战性。这说明即使最终模型已经达到较高准确率，Oxford 102 的剩余错误仍主要来自细粒度视觉差异，而不是训练过程没有收敛或模型整体表达能力不足。
+图 \ref{fig:classification-misclassified-examples} 进一步列出了一组代表性错分样例，并加入少量第 97 类正确识别样本作为参照；图中带有 ref 的条目表示第 97 类参考样本。可以看到，错分通常不是由图像完全失真导致的，而是与花瓣形状、花心结构、颜色组合、拍摄角度和遮挡等细节有关。例如第 96 类多次被预测为第 97 类，样例中花瓣轮廓和颜色分布非常接近；第 50 类与第 12 类的混淆则体现出黄色花卉在局部纹理和花型相似时仍然具有较强挑战性。这说明即使最终模型已经达到较高准确率，Oxford 102 的剩余错误仍主要来自细粒度视觉差异，而不是训练过程没有收敛或模型整体表达能力不足。
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{../tasks/task1_flower_classification/experiment_results/final_report/figures/task1_convnext384_misclassified_examples.png}
-    \caption{最终 ConvNeXt-Tiny 384px 模型的高置信度错分样例；T 表示真实类别，P 表示预测类别}
+    \caption{最终 ConvNeXt-Tiny 384px 模型的错分样例与第 97 类参考样本；T 表示真实类别，P 表示预测类别，ref 表示正确识别的第 97 类参照样本}
     \label{fig:classification-misclassified-examples}
 \end{figure}
 
@@ -670,18 +670,18 @@ ID 20 跳变的主要原因在于检测缺失和轨迹关联同时失效。ByteT
 类别跳变则更多来自检测器而非 tracker。ByteTrack 主要维护轨迹身份，类别标签仍由每帧 YOLO 检测头给出；当红色 SUV 占据画面主体、白车局部特征被遮挡或被邻近车辆污染时，分类头容易受到干扰。类别级指标也支持这一点：car 的 mAP50 为 0.790，而 suv 只有 0.188，说明模型对 SUV 相关边界的判别更不稳定。该现象说明检测与跟踪并不是两个完全独立的环节：检测器如果在遮挡、远距离和类别相似情况下不稳定，后续轨迹关联就会失去可靠输入。实际系统中可以通过提高检测器召回率、调节 ByteTrack 的匹配阈值、加入运动模型约束或进行摄像机场景标定来缓解该问题。
 
 
-\section{语义分割实验}
+\section{图像分割实验}
 
 \subsection{数据集与 U-Net 结构}
 
-语义分割实验使用 \code{iccv09Data} 中的 \code{labels/*.regions.txt} 作为语义标签，共包含 8 个类别：\code{sky}、\code{tree}、\code{road}、\code{grass}、\code{water}、\code{building}、\code{mountain} 和 \code{foreground\_object}。与图像分类和目标检测不同，语义分割需要为每一个有效像素预测类别，因此模型既要理解全局场景语义，也要恢复局部边界和区域形状。标签中的负数像素表示未知区域，训练时统一映射为 \code{ignore\_index = 255}，损失与指标统计时忽略这些像素。实验中输入图像统一缩放为 \(320 \times 240\)，并使用固定随机种子从全部样本中随机抽取 15\% 作为验证集。
+图像分割实验使用 \code{iccv09Data} 中的 \code{labels/*.regions.txt} 作为语义标签，共包含 8 个类别：\code{sky}、\code{tree}、\code{road}、\code{grass}、\code{water}、\code{building}、\code{mountain} 和 \code{foreground\_object}。与图像分类和目标检测不同，图像分割需要为每一个有效像素预测类别，因此模型既要理解全局场景语义，也要恢复局部边界和区域形状。标签中的负数像素表示未知区域，训练时统一映射为 \code{ignore\_index = 255}，损失与指标统计时忽略这些像素。实验中输入图像统一缩放为 \(320 \times 240\)，并使用固定随机种子从全部样本中随机抽取 15\% 作为验证集。
 
-图 \ref{fig:segmentation-dataset-example} 给出了输入图像与语义标签样例。可以看到，天空、道路和建筑等大面积类别占据了多数像素，而 \code{foreground\_object}、\code{mountain} 等类别面积较小，更容易受分辨率和下采样影响。因此，分割实验不能只依赖 pixel accuracy，还需要使用 \code{mIoU} 和 per-class IoU 来衡量区域边界和小类别恢复质量。
+图 \ref{fig:segmentation-dataset-example} 给出了输入图像与语义标签样例。可以看到，天空、道路和建筑等大面积类别占据了多数像素，而 \code{foreground\_object}、\code{mountain} 等类别面积较小，更容易受分辨率和下采样影响。因此，图像分割实验不能只依赖 pixel accuracy，还需要使用 \code{mIoU} 和 per-class IoU 来衡量区域边界和小类别恢复质量。
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.88\textwidth]{../tasks/task3_semantic_segmentation/outputs/segmentation_dataset_label_example.png}
-    \caption{语义分割数据与标签样例}
+    \caption{图像分割数据与标签样例}
     \label{fig:segmentation-dataset-example}
 \end{figure}
 
@@ -708,7 +708,7 @@ ID 20 跳变的主要原因在于检测缺失和轨迹关联同时失效。ByteT
 
 \begin{table}[H]
     \centering
-    \caption{语义分割训练配置}
+    \caption{图像分割训练配置}
     \small
     \begin{tabular}{ll}
         \toprule
@@ -821,7 +821,7 @@ Dice 系数直接衡量预测区域和真实区域的重叠程度。实验中手
     \label{fig:segmentation-training-curves}
 \end{figure}
 
-图 \ref{fig:segmentation-confusion-matrices} 给出了三组最佳模型对应的混淆矩阵。可以看出，\code{sky} 和 \code{building} 的识别最稳定，而 \code{mountain}、\code{water} 和部分前景目标更容易与相邻区域混淆，这也解释了这些类别 IoU 偏低的原因。
+图 \ref{fig:segmentation-confusion-matrices} 给出了三组最佳模型对应的混淆矩阵。可以看出，\code{sky}、\code{road} 和 \code{building} 的识别效果最好，这几个类别在混淆矩阵对角线上的响应最强，说明模型能够较稳定地恢复它们的大面积区域结构。其中，天空通常位于图像上方且外观特征明显；道路和建筑在场景中也往往具有较稳定的空间位置与纹理模式，因此更容易学习。相比之下，\code{mountain} 是最难识别的类别，其 IoU 最低。一个可能的原因是山体在数据集中出现频率较低、像素占比偏小，并且在颜色和纹理上容易与 \code{tree}、\code{grass} 等自然场景区域混淆，因此模型更难为其学习到稳定且清晰的判别边界。
 
 \begin{figure}[H]
     \centering
@@ -883,13 +883,15 @@ Dice 系数直接衡量预测区域和真实区域的重叠程度。实验中手
 
 车辆检测实验的主要难点不只在检测框本身，也在视频中的时间连续性。YOLOv8s 的 mAP 指标显示，模型已经能大致定位主要车辆，但精确框回归和小目标检测仍有提升空间。视频跟踪部分进一步表明，即使单帧检测器在大部分帧中能识别车辆，遮挡、类别跳变和短暂漏检仍会影响 ByteTrack 的轨迹连续性，从而导致 tracking ID 变化。该现象说明检测跟踪系统的稳定性取决于检测器和 tracker 的共同作用，也取决于置信度阈值、IoU 阈值和越线规则的选择。
 
-语义分割实验中，Dice Loss 在 mIoU 上优于 Cross-Entropy，说明区域重叠目标更符合分割实验的评价方式。per-class IoU 显示，Cross-Entropy 对 sky 等大面积类别较稳定，但在 road 等类别上几乎失效；Dice Loss 能显著改善 tree、road、grass 和 foreground\_object 等类别的区域覆盖，因此平均 IoU 更高。CE+Dice 虽然取得最高 pixel accuracy，但 mIoU 略低于纯 Dice，说明 pixel accuracy 可能偏向大面积类别，而 mIoU 对小类别更加敏感。
+图像分割实验表明，三种损失函数都能够稳定训练轻量 U-Net，但组合损失在当前配置下取得了最佳综合效果。验证集结果显示，Cross-Entropy、Dice 和 Cross-Entropy + Dice 的最佳 mIoU 分别为 0.6436、0.6477 和 0.6531，其中组合损失最高。这说明仅使用逐像素交叉熵虽然能够提供稳定的分类监督，但引入 Dice 项后，模型在区域重叠和小类别恢复上会进一步受益。
+
+从 per-class IoU 来看，sky、road 和 building 等大面积类别在三种方法下都相对容易，而 mountain 仍然是最难类别。Dice Loss 在 mountain 上优于单独的 Cross-Entropy，说明区域级优化对困难类别有帮助；而 Cross-Entropy + Dice 在 sky、tree、road、grass、water、building 和 foreground\_object 等大多数类别上都取得了最优或接近最优的结果，因此最终整体 mIoU 最高。这个结果也说明，在图像分割任务中，pixel accuracy 往往更容易被大面积类别主导，而 mIoU 和 per-class IoU 更能真实反映不同类别的分割质量。
 
 \section{结论}
 
-本文完成了花卉图像分类、道路车辆检测与跟踪、语义分割三类视觉识别实验。花卉分类中，ConvNeXt-Tiny 384px 在 10 个随机种子上取得 \accpm{95.60}{0.61} 的测试准确率，是本实验中最稳定的分类模型；预训练、注意力机制、输入分辨率和超参数选择均显著影响细粒度分类表现。车辆检测中，YOLOv8s 在验证集上取得 mAP50 0.520，并能结合 ByteTrack 完成跟踪 ID 显示和越线计数，但遮挡仍会造成 ID switch。语义分割中，手写 U-Net 配合 Dice Loss 取得最高验证集 mIoU 0.3055，说明区域重叠优化对分割场景具有实际价值。
+本文完成了花卉图像分类、道路车辆检测与跟踪、图像分割三类视觉识别实验。花卉分类中，ConvNeXt-Tiny 384px 在 10 个随机种子上取得 \accpm{95.60}{0.61} 的测试准确率，是本实验中最稳定的分类模型；预训练、注意力机制、输入分辨率和超参数选择均显著影响细粒度分类表现。车辆检测中，YOLOv8s 在验证集上取得 mAP50 0.520，并能结合 ByteTrack 完成跟踪 ID 显示和越线计数，但遮挡仍会造成 ID switch。图像分割中，手写轻量 U-Net 在当前实验设置下分别取得 Cross-Entropy 0.6436、Dice 0.6477 和 Cross-Entropy + Dice 0.6531 的最佳验证集 mIoU，其中最优配置为 Cross-Entropy + Dice，说明组合损失在像素级分类稳定性和区域重叠优化之间达到了更好的平衡。
 
-总体而言，三组实验从分类、检测跟踪和分割三个层次展示了深度视觉模型在空间智能问题中的应用方式。预训练特征提供了小样本识别的基础，检测器稳定性决定了跟踪质量，而像素级理解则需要结构设计和损失函数共同配合。
+总体而言，三组实验从分类、检测跟踪和图像分割三个层次展示了深度视觉模型在空间智能问题中的应用方式。预训练特征提供了小样本识别的基础，检测器稳定性决定了跟踪质量，而像素级理解则需要结构设计和损失函数共同配合。
 
 \appendix
 
