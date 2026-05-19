@@ -25,7 +25,7 @@
 \setstretch{1.16}
 \renewcommand{\arraystretch}{1.16}
 
-\newcommand{\accpm}[2]{#1\% $\pm$ #2 个百分点}
+\newcommand{\accpm}[2]{#1\% $\pm$ #2\%}
 \newcommand{\code}[1]{\texttt{#1}}
 
 \begin{document}
@@ -76,7 +76,7 @@
 
 本文实验分为三个部分。第一部分研究 Oxford 102 Flowers 细粒度图像分类，该数据集每类训练样本很少，适合分析 ImageNet 预训练、注意力模块和现代 backbone 对小样本分类的影响。第二部分研究道路车辆检测与跟踪，重点是 YOLOv8 检测器、ByteTrack 轨迹维持和遮挡场景下的 ID 跳变。第三部分研究图像分割，使用手写 U-Net 比较不同损失函数对 mIoU 的影响。
 
-本文的写作重点放在实验方法、训练设置、定量结果和结果分析上。所有表格中的 accuracy 均为百分比；检测结果使用 precision、recall 和 mAP；分割结果使用 pixel accuracy 和 mIoU。
+本文的写作重点放在实验方法、训练设置、定量结果和结果分析上。检测结果使用 precision、recall 和 mAP；分割结果使用 pixel accuracy 和 mIoU。
 
 \section{花卉图像分类实验}
 
@@ -304,7 +304,7 @@ CNN 网格中 weight decay 取 \(1\times10^{-4}\) 和 \(1\times10^{-5}\)；Trans
 
 \subsection{预训练消融实验}
 
-预训练消融实验的结论非常明显。采用 ImageNet 权重时，两个 ResNet 的测试准确率接近 90\%；从零训练时仅约 53\%--55\%。具体而言，ResNet-18 从 52.72\% 提升到 89.97\%，ResNet-34 从 55.44\% 提升到 89.58\%。两组差距均超过 34 个百分点。
+预训练消融实验的结论非常明显。采用 ImageNet 权重时，两个 ResNet 的测试准确率接近 90\%；从零训练时仅约 53\%--55\%。具体而言，ResNet-18 从 52.72\% 提升到 89.97\%，ResNet-34 从 55.44\% 提升到 89.58\%。两组差距均超过 34\%。
 
 \begin{table}[H]
     \centering
@@ -344,11 +344,11 @@ CNN 网格中 weight decay 取 \(1\times10^{-4}\) 和 \(1\times10^{-5}\)；Trans
         模型 & Val Acc. & Test Acc. & 相对同深度 baseline 的变化 \\
         \midrule
         ResNet-18 & 92.94\% & 89.97\% & -- \\
-        ResNet-18-SE & 93.63\% & 90.65\% & +0.68 个百分点 \\
-        ResNet-18-CBAM & 94.12\% & 90.86\% & +0.89 个百分点 \\
+        ResNet-18-SE & 93.63\% & 90.65\% & +0.68\% \\
+        ResNet-18-CBAM & 94.12\% & 90.86\% & +0.89\% \\
         ResNet-34 & 92.65\% & 89.58\% & -- \\
-        ResNet-34-SE & 93.43\% & 89.72\% & +0.14 个百分点 \\
-        ResNet-34-CBAM & 93.92\% & 92.15\% & +2.57 个百分点 \\
+        ResNet-34-SE & 93.43\% & 89.72\% & +0.14\% \\
+        ResNet-34-CBAM & 93.92\% & 92.15\% & +2.57\% \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -370,7 +370,7 @@ Transformer 组整体优于基础 CNN 组。ViT-B/16 的最优测试准确率为
 
 \subsection{超参数影响分析}
 
-从完整网格搜索和补充实验可以观察到以下规律：
+从完整网格搜索和补充实验可以观察到以下规律。为避免正文表格过于冗长，基础网格中各模型在不同学习率、weight decay、batch size 和 label smoothing 下的完整验证集准确率汇总见附录 \ref{app:classification-hparam-tables}；最终 ConvNeXt-Tiny 384px 主结果配置见附录 \ref{app:classification-final-config}。
 
 \begin{enumerate}
     \item 学习率：对预训练 CNN 来说，\(3\times10^{-4}\) 在 224px 网格中通常比 \(1\times10^{-3}\) 更稳定；Transformer 中 \(1\times10^{-4}\) 的结果明显优于 \(3\times10^{-4}\)，说明预训练 Transformer 微调时更需要较小学习率。最终 ConvNeXt 384px 配置中，\(1\times10^{-4}\) 也优于 \(3\times10^{-4}\) 的候选配置。
@@ -879,7 +879,7 @@ Dice 系数直接衡量预测区域和真实区域的重叠程度。实验中手
 因此，在当前数据划分和训练配置下，\textbf{Cross-Entropy + Dice 是本实验中效果最好的损失函数配置}。
 \section{综合讨论}
 
-三类实验体现了不同视觉问题的主要难点。花卉分类实验中，训练集每类只有 10 张图像，模型性能高度依赖预训练特征。ResNet 从零训练与 ImageNet 预训练之间超过 34 个百分点的差距说明，小样本细粒度分类很难仅依靠目标数据集本身学习出稳健特征。注意力模块能进一步提升 CNN baseline，但收益小于更强 backbone 和更高分辨率输入带来的增益。
+三类实验体现了不同视觉问题的主要难点。花卉分类实验中，训练集每类只有 10 张图像，模型性能高度依赖预训练特征。ResNet 从零训练与 ImageNet 预训练之间超过 34\% 的差距说明，小样本细粒度分类很难仅依靠目标数据集本身学习出稳健特征。注意力模块能进一步提升 CNN baseline，但收益小于更强 backbone 和更高分辨率输入带来的增益。
 
 车辆检测实验的主要难点不只在检测框本身，也在视频中的时间连续性。YOLOv8s 的 mAP 指标显示，模型已经能大致定位主要车辆，但精确框回归和小目标检测仍有提升空间。视频跟踪部分进一步表明，即使单帧检测器在大部分帧中能识别车辆，遮挡、类别跳变和短暂漏检仍会影响 ByteTrack 的轨迹连续性，从而导致 tracking ID 变化。该现象说明检测跟踪系统的稳定性取决于检测器和 tracker 的共同作用，也取决于置信度阈值、IoU 阈值和越线规则的选择。
 
@@ -896,6 +896,7 @@ Dice 系数直接衡量预测区域和真实区域的重叠程度。实验中手
 \appendix
 
 \section{最终分类模型训练配置}
+\label{app:classification-final-config}
 
 \begin{table}[H]
     \centering
@@ -921,6 +922,7 @@ Dice 系数直接衡量预测区域和真实区域的重叠程度。实验中手
 \end{table}
 
 \section{基础超参数搜索结果总表}
+\label{app:classification-hparam-tables}
 
 附录表格按照模型家族分组给出基础网格搜索结果。表中单元格为对应配置在训练过程中取得的最佳验证集准确率，单位为百分比。为使表格与正文分析对应，附录仅保留验证集 accuracy；epoch 和 test accuracy 不在此处重复列出。
 
