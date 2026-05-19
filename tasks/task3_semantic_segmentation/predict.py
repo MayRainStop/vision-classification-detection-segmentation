@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from src.segmentation.dataset import ResizeToTensor, TASK_METADATA
+from src.segmentation.dataset import TASK_METADATA
 from src.segmentation.model import UNet
 
 
@@ -61,9 +61,13 @@ def main() -> None:
 
     image = Image.open(args.image).convert("RGB")
     original_size = image.size
-    transform = ResizeToTensor(tuple(train_args["image_size"]))
-    image_tensor, _ = transform(image, np.zeros((image.height, image.width), dtype=np.int64))
-    image_tensor = image_tensor.unsqueeze(0).to(args.device)
+    width, height = tuple(train_args["image_size"])
+    image = image.resize((width, height), resample=Image.BILINEAR)
+    image_arr = np.asarray(image, dtype=np.float32) / 255.0
+    image_tensor = torch.from_numpy(image_arr).permute(2, 0, 1)
+    mean = torch.tensor((0.485, 0.456, 0.406), dtype=image_tensor.dtype).view(3, 1, 1)
+    std = torch.tensor((0.229, 0.224, 0.225), dtype=image_tensor.dtype).view(3, 1, 1)
+    image_tensor = ((image_tensor - mean) / std).unsqueeze(0).to(args.device)
 
     with torch.no_grad():
         pred = model(image_tensor).argmax(dim=1).squeeze(0).cpu().numpy().astype(np.uint8)

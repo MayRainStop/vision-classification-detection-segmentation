@@ -1,0 +1,34 @@
+{
+  "data_root": "/root/autodl-tmp/pj2/iccv09Data",
+  "task": "regions",
+  "loss_mode": "dice",
+  "epochs": 100,
+  "batch_size": 8,
+  "image_size": [
+    320,
+    240
+  ],
+  "base_channels": 32,
+  "lr": 0.0003,
+  "weight_decay": 0.0001,
+  "num_workers": 4,
+  "output_dir": "runs/dice_random15",
+  "device": "cuda",
+  "seed": 42,
+  "amp": true,
+  "ce_weight": 1.0,
+  "dice_weight": 1.0,
+  "disable_class_weights": false,
+  "val_ratio": 0.15,
+  "num_classes": 8,
+  "class_names": [
+    "sky",
+    "tree",
+    "road",
+    "grass",
+    "water",
+    "building",
+    "mountain",
+    "foreground"
+  ]
+}

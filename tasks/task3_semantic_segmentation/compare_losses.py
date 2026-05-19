@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from src.segmentation.dataset import TASK_METADATA, load_split_ids
+from src.segmentation.dataset import TASK_METADATA, load_dataset_records
 
 
 LOSS_CONFIGS = {
@@ -37,13 +37,14 @@ PALETTE = np.array(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run and compare CE / Dice / CE+Dice segmentation experiments.")
-    parser.add_argument("--task", type=str, default="regions", choices=sorted(TASK_METADATA))
+    parser.add_argument("--task", type=str, default="regions", choices=("regions",))
     parser.add_argument("--data-root", type=str, default="iccv09Data")
     parser.add_argument("--output-root", type=str, default="runs/loss_comparison")
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=8)
-    parser.add_argument("--image-size", type=int, nargs=2, default=(256, 256), metavar=("W", "H"))
+    parser.add_argument("--image-size", type=int, nargs=2, default=(320, 240), metavar=("W", "H"))
     parser.add_argument("--base-channels", type=int, default=32)
+    parser.add_argument("--val-ratio", type=float, default=0.15)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--num-workers", type=int, default=0)
@@ -77,6 +78,8 @@ def run_training(args: argparse.Namespace, config_name: str, output_dir: Path) -
         str(args.image_size[1]),
         "--base-channels",
         str(args.base_channels),
+        "--val-ratio",
+        str(args.val_ratio),
         "--seed",
         str(args.seed),
         "--device",
@@ -161,16 +164,34 @@ def save_confusion_grid(args: argparse.Namespace, output_dir: Path) -> None:
 
 
 def save_prediction_grid(args: argparse.Namespace, output_dir: Path) -> None:
-    image_dir = Path(args.data_root) / "images"
-    label_dir = Path(args.data_root) / "labels"
-    _, val_ids = load_split_ids(image_dir, val_ratio=0.2, seed=args.seed)
-    sample_id = args.sample_id or val_ids[0]
-    image_path = image_dir / f"{sample_id}.jpg"
-    label_path = label_dir / f"{sample_id}.{TASK_METADATA[args.task].label_suffix}.txt"
+    records = load_dataset_records(
+        args.data_root,
+        task=args.task,
+        val_ratio=args.val_ratio,
+        seed=args.seed,
+        split="val",
+    )
+    if not records:
+        raise RuntimeError("Validation split is empty.")
+
+    if args.sample_id is None:
+        sample = records[0]
+    else:
+        matched = [record for record in records if record.sample_id == args.sample_id]
+        if not matched:
+            raise ValueError(f"Sample id '{args.sample_id}' not found in validation split.")
+        sample = matched[0]
+
+    sample_id = sample.sample_id
+    image_path = sample.image_path
+    label_path = sample.mask_path
 
     image = Image.open(image_path).convert("RGB")
-    label = np.loadtxt(label_path, dtype=np.int64)
-    label[label < 0] = 0
+    if label_path.suffix.lower() == ".txt":
+        label = np.loadtxt(label_path, dtype=np.int64)
+        label[label < 0] = 0
+    else:
+        label = np.asarray(Image.open(label_path), dtype=np.int64)
     palette = build_palette(TASK_METADATA[args.task].num_classes)
     gt_color = palette[label]
 

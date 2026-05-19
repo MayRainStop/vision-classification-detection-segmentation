@@ -4,138 +4,138 @@ import argparse
 import json
 import random
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import torch
-from torch import nn
-from torch.optim import AdamW
+from torch.amp import autocast
+from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.segmentation.dataset import (
-    TASK_METADATA,
-    ICCV09SegmentationDataset,
-    compute_class_weights,
-    load_split_ids,
-)
-from src.segmentation.losses import SegmentationLoss
+from src.segmentation.dataset import CLASS_NAMES, IGNORE_INDEX, StanfordBackgroundDataset, TASK_METADATA
+from src.segmentation.losses import build_loss
 from src.segmentation.metrics import confusion_matrix, summarize_metrics
 from src.segmentation.model import UNet
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train a segmentation model on ICCV09Data.")
-    parser.add_argument("--data-root", type=str, default="iccv09Data")
-    parser.add_argument("--task", type=str, default="regions", choices=sorted(TASK_METADATA))
-    parser.add_argument("--image-size", type=int, nargs=2, default=(256, 256), metavar=("W", "H"))
-    parser.add_argument("--epochs", type=int, default=20)
+    parser = argparse.ArgumentParser(description="Train a handwritten U-Net on Stanford Background Dataset.")
+    parser.add_argument("--data-root", type=Path, default=Path("iccv09Data_prepared"))
+    parser.add_argument("--task", type=str, default="regions", choices=("regions",))
+    parser.add_argument("--loss-mode", type=str, default="combo", choices=("ce", "dice", "combo"))
+    parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--batch-size", type=int, default=8)
-    parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument("--image-size", type=int, nargs=2, default=(320, 240), metavar=("W", "H"))
+    parser.add_argument("--base-channels", type=int, default=32)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
-    parser.add_argument("--val-ratio", type=float, default=0.2)
+    parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument("--output-dir", type=Path, required=False, default=None)
+    parser.add_argument("--device", default="cuda")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--base-channels", type=int, default=32)
-    parser.add_argument("--ignore-index", type=int, default=255)
-    parser.add_argument("--loss-mode", type=str, default="combo", choices=("ce", "dice", "combo"))
+    parser.add_argument("--amp", action="store_true")
     parser.add_argument("--ce-weight", type=float, default=1.0)
     parser.add_argument("--dice-weight", type=float, default=1.0)
-    parser.add_argument("--output-dir", type=str, default=None)
     parser.add_argument("--disable-class-weights", action="store_true")
-    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--val-ratio", type=float, default=0.15)
     return parser.parse_args()
 
 
-def seed_everything(seed: int) -> None:
+def set_seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
 
-def build_dataloaders(args: argparse.Namespace) -> tuple[DataLoader, DataLoader, list[str]]:
-    data_root = Path(args.data_root)
-    train_ids, val_ids = load_split_ids(data_root / "images", args.val_ratio, args.seed)
+class SegmentationMeterCompat:
+    def __init__(self, num_classes: int, ignore_index: int = 255) -> None:
+        self.num_classes = num_classes
+        self.ignore_index = ignore_index
+        self.confusion = np.zeros((num_classes, num_classes), dtype=np.int64)
 
-    train_set = ICCV09SegmentationDataset(
-        root=data_root,
-        sample_ids=train_ids,
-        task=args.task,
-        image_size=tuple(args.image_size),
-        ignore_index=args.ignore_index,
-    )
-    val_set = ICCV09SegmentationDataset(
-        root=data_root,
-        sample_ids=val_ids,
-        task=args.task,
-        image_size=tuple(args.image_size),
-        ignore_index=args.ignore_index,
-    )
+    def update(self, logits: torch.Tensor, target: torch.Tensor) -> None:
+        hist = confusion_matrix(logits, target, self.num_classes, self.ignore_index)
+        self.confusion += hist.cpu().numpy()
 
-    train_loader = DataLoader(
-        train_set,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers,
-        pin_memory=torch.cuda.is_available(),
-    )
-    val_loader = DataLoader(
-        val_set,
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.num_workers,
-        pin_memory=torch.cuda.is_available(),
-    )
-    return train_loader, val_loader, train_ids
+    def compute(self) -> dict[str, float | list[float | None]]:
+        return summarize_metrics(torch.from_numpy(self.confusion))
 
 
-def run_epoch(
-    model: nn.Module,
+def run_one_epoch(
+    model: torch.nn.Module,
     loader: DataLoader,
-    criterion: nn.Module,
-    device: torch.device,
+    criterion: torch.nn.Module,
     optimizer: torch.optim.Optimizer | None,
+    device: torch.device,
     num_classes: int,
-    ignore_index: int,
-) -> tuple[dict[str, float], torch.Tensor]:
+    amp: bool,
+    scaler: GradScaler | None,
+    desc: str,
+) -> tuple[dict[str, float | list[float | None]], torch.Tensor]:
     is_train = optimizer is not None
     model.train(is_train)
-    running_loss = 0.0
+    total_loss = 0.0
+    n_samples = 0
+    meter = SegmentationMeterCompat(num_classes=num_classes, ignore_index=IGNORE_INDEX)
     hist = torch.zeros((num_classes, num_classes), dtype=torch.int64)
 
-    progress = tqdm(loader, leave=False)
-    for images, masks in progress:
-        images = images.to(device)
-        masks = masks.to(device)
-
+    pbar = tqdm(loader, desc=desc, leave=True)
+    for batch in pbar:
+        images = batch["image"].to(device, non_blocking=True)
+        masks = batch["mask"].to(device, non_blocking=True)
+        bs = images.size(0)
+        if is_train:
+            optimizer.zero_grad(set_to_none=True)
         with torch.set_grad_enabled(is_train):
-            logits = model(images)
-            loss = criterion(logits, masks)
-
+            with autocast("cuda", enabled=amp):
+                logits = model(images)
+                loss = criterion(logits, masks)
             if is_train:
-                optimizer.zero_grad(set_to_none=True)
-                loss.backward()
-                optimizer.step()
+                assert optimizer is not None
+                assert scaler is not None
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+        total_loss += float(loss.detach().cpu()) * bs
+        n_samples += bs
+        batch_hist = confusion_matrix(logits.detach(), masks.detach(), num_classes, IGNORE_INDEX)
+        hist += batch_hist.cpu()
+        meter.update(logits.detach(), masks.detach())
+        metrics = meter.compute()
+        pbar.set_postfix(loss=total_loss / max(n_samples, 1), miou=metrics["miou"])
 
-        running_loss += loss.item() * images.size(0)
-        hist += confusion_matrix(logits.detach().cpu(), masks.detach().cpu(), num_classes, ignore_index)
-        progress.set_postfix(loss=f"{loss.item():.4f}")
-
-    metrics = summarize_metrics(hist)
-    metrics["loss"] = running_loss / max(len(loader.dataset), 1)
-    return metrics, hist
-
-
-def resolve_loss_weights(args: argparse.Namespace) -> tuple[float, float]:
-    if args.loss_mode == "ce":
-        return 1.0, 0.0
-    if args.loss_mode == "dice":
-        return 0.0, 1.0
-    return args.ce_weight, args.dice_weight
+    out = meter.compute()
+    out["loss"] = total_loss / max(n_samples, 1)
+    return out, hist
 
 
-def plot_training_curves(history: list[dict[str, float]], output_dir: Path) -> None:
+def resolve_loss_name(loss_mode: str) -> str:
+    return "ce_dice" if loss_mode == "combo" else loss_mode
+
+
+def save_checkpoint(path: Path, model: torch.nn.Module, optimizer: torch.optim.Optimizer, epoch: int, metrics: dict[str, Any], config: dict[str, Any], history: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "epoch": epoch,
+            "model_state": model.state_dict(),
+            "model": model.state_dict(),
+            "optimizer_state": optimizer.state_dict(),
+            "metrics": metrics,
+            "config": config,
+            "args": config,
+            "history": history,
+            "class_names": CLASS_NAMES,
+        },
+        path,
+    )
+
+
+def plot_training_curves(history: list[dict[str, Any]], output_dir: Path) -> None:
     epochs = [record["epoch"] for record in history]
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
 
@@ -174,11 +174,6 @@ def plot_confusion_matrix(hist: torch.Tensor, class_names: tuple[str, ...], outp
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Ground Truth")
     ax.set_title("Normalized Confusion Matrix")
-
-    for i in range(len(class_names)):
-        for j in range(len(class_names)):
-            ax.text(j, i, f"{normalized[i, j]:.2f}", ha="center", va="center", color="black", fontsize=8)
-
     fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04)
     fig.tight_layout()
     fig.savefig(output_path, dpi=200, bbox_inches="tight")
@@ -187,92 +182,81 @@ def plot_confusion_matrix(hist: torch.Tensor, class_names: tuple[str, ...], outp
 
 def main() -> None:
     args = parse_args()
-    seed_everything(args.seed)
+    set_seed(args.seed)
 
     if args.output_dir is None:
-        args.output_dir = f"runs/{args.task}_baseline"
+        args.output_dir = Path(f"runs/{args.task}_baseline")
 
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    device = torch.device(args.device if torch.cuda.is_available() and args.device != "cpu" else "cpu")
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    config = vars(args).copy()
+    config = {k: str(v) if isinstance(v, Path) else v for k, v in config.items()}
+    config["num_classes"] = len(CLASS_NAMES)
+    config["class_names"] = CLASS_NAMES
+    (args.output_dir / "config.json").write_text(json.dumps(config, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    metadata = TASK_METADATA[args.task]
-    device = torch.device(args.device)
-    train_loader, val_loader, train_ids = build_dataloaders(args)
+    train_ds = StanfordBackgroundDataset(args.data_root, split="train", image_size=tuple(args.image_size), augment=True)
+    val_ds = StanfordBackgroundDataset(args.data_root, split="val", image_size=tuple(args.image_size), augment=False)
+    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=False)
+    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True, drop_last=False)
 
-    model = UNet(
-        in_channels=3,
-        num_classes=metadata.num_classes,
-        base_channels=args.base_channels,
-    ).to(device)
+    model = UNet(in_channels=3, num_classes=len(CLASS_NAMES), base_channels=args.base_channels).to(device)
+    criterion = build_loss(resolve_loss_name(args.loss_mode), num_classes=len(CLASS_NAMES), ignore_index=IGNORE_INDEX, ce_weight=args.ce_weight, dice_weight=args.dice_weight).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(args.epochs, 1))
+    scaler = GradScaler(enabled=args.amp)
 
-    class_weights = None
-    if not args.disable_class_weights:
-        class_weights = compute_class_weights(args.data_root, train_ids, args.task, args.ignore_index).to(device)
-
-    ce_weight, dice_weight = resolve_loss_weights(args)
-    criterion = SegmentationLoss(
-        class_weights=class_weights,
-        ignore_index=args.ignore_index,
-        ce_weight=ce_weight,
-        dice_weight=dice_weight,
-    ).to(device)
-    optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-
+    history: list[dict[str, Any]] = []
     best_miou = -1.0
-    history: list[dict[str, float]] = []
     best_hist: torch.Tensor | None = None
+    best_metrics: dict[str, Any] = {}
 
     for epoch in range(1, args.epochs + 1):
-        train_metrics, _ = run_epoch(
-            model,
-            train_loader,
-            criterion,
-            device,
-            optimizer,
-            metadata.num_classes,
-            args.ignore_index,
-        )
-        val_metrics, val_hist = run_epoch(
-            model,
-            val_loader,
-            criterion,
-            device,
-            optimizer=None,
-            num_classes=metadata.num_classes,
-            ignore_index=args.ignore_index,
-        )
-
-        record = {
+        train_metrics, _ = run_one_epoch(model, train_loader, criterion, optimizer, device, len(CLASS_NAMES), args.amp, scaler, f"train {epoch}/{args.epochs}")
+        val_metrics, val_hist = run_one_epoch(model, val_loader, criterion, None, device, len(CLASS_NAMES), args.amp, None, f"val {epoch}/{args.epochs}")
+        scheduler.step()
+        row = {
             "epoch": epoch,
+            "lr": optimizer.param_groups[0]["lr"],
             "train_loss": train_metrics["loss"],
             "train_miou": train_metrics["miou"],
             "train_pixel_acc": train_metrics["pixel_acc"],
+            "train_mean_acc": train_metrics["mean_acc"],
             "val_loss": val_metrics["loss"],
             "val_miou": val_metrics["miou"],
             "val_pixel_acc": val_metrics["pixel_acc"],
+            "val_mean_acc": val_metrics["mean_acc"],
             "val_per_class_iou": val_metrics["per_class_iou"],
         }
-        history.append(record)
-        print(json.dumps(record, ensure_ascii=False))
+        history.append(row)
+        pd.DataFrame(history).to_csv(args.output_dir / "history.csv", index=False)
 
-        latest_path = output_dir / "last.pt"
-        torch.save({"model": model.state_dict(), "args": vars(args), "history": history}, latest_path)
+        console_row = {
+            "epoch": epoch,
+            "train_loss": row["train_loss"],
+            "train_miou": row["train_miou"],
+            "train_pixel_acc": row["train_pixel_acc"],
+            "val_loss": row["val_loss"],
+            "val_miou": row["val_miou"],
+            "val_pixel_acc": row["val_pixel_acc"],
+            "val_per_class_iou": row["val_per_class_iou"],
+        }
+        print(json.dumps(console_row, ensure_ascii=False))
 
+        save_checkpoint(args.output_dir / "last.pt", model, optimizer, epoch, row, config, history)
         if val_metrics["miou"] > best_miou:
-            best_miou = val_metrics["miou"]
+            best_miou = float(val_metrics["miou"])
+            best_metrics = row.copy()
             best_hist = val_hist.clone()
-            best_path = output_dir / "best.pt"
-            torch.save({"model": model.state_dict(), "args": vars(args), "history": history}, best_path)
+            save_checkpoint(args.output_dir / "best.pt", model, optimizer, epoch, best_metrics, config, history)
+            (args.output_dir / "metrics_best.json").write_text(json.dumps(best_metrics, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    with (output_dir / "history.json").open("w", encoding="utf-8") as fp:
-        json.dump(history, fp, ensure_ascii=False, indent=2)
-
-    plot_training_curves(history, output_dir)
-
+    (args.output_dir / "history.json").write_text(json.dumps(history, indent=2, ensure_ascii=False), encoding="utf-8")
+    plot_training_curves(history, args.output_dir)
     if best_hist is not None:
-        torch.save(best_hist, output_dir / "best_confusion_matrix.pt")
-        np.save(output_dir / "best_confusion_matrix.npy", best_hist.cpu().numpy())
-        plot_confusion_matrix(best_hist, metadata.class_names, output_dir / "best_confusion_matrix.png")
+        torch.save(best_hist, args.output_dir / "best_confusion_matrix.pt")
+        np.save(args.output_dir / "best_confusion_matrix.npy", best_hist.cpu().numpy())
+        plot_confusion_matrix(best_hist, tuple(TASK_METADATA[args.task].class_names), args.output_dir / "best_confusion_matrix.png")
 
 
 if __name__ == "__main__":

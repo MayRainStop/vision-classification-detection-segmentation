@@ -67,7 +67,7 @@
 \vspace{0.6em}
 
 \begin{abstract}
-本文围绕三类典型视觉识别问题展开实验：细粒度花卉图像分类、道路车辆检测与跟踪、场景语义分割。花卉分类实验使用 Oxford 102 Flowers 数据集，系统比较 ResNet baseline、ImageNet 预训练与从零训练、SE/CBAM 注意力模块、ViT/Swin Transformer 以及 ConvNeXt 等现代卷积网络；最终 ConvNeXt-Tiny 在 384px 输入和 10 个随机种子下取得 \accpm{95.60}{0.61} 的测试准确率。车辆检测实验使用 YOLOv8s 在道路车辆数据集上训练检测器，验证集 mAP50 为 0.520，并结合 ByteTrack 完成跟踪 ID 显示、越线计数和遮挡失败分析。语义分割实验从零实现轻量 U-Net，在 Stanford Background / ICCV09 风格数据上比较 Cross-Entropy、Dice 与组合损失，Dice Loss 取得最高验证集 mIoU 0.3055。实验结果表明，预训练特征、注意力机制、输入分辨率、检测稳定性和区域重叠损失都会显著影响视觉识别系统的最终泛化性能。
+本文围绕三类典型视觉识别问题展开实验：细粒度花卉图像分类、道路车辆检测与跟踪、场景语义分割。花卉分类实验使用 Oxford 102 Flowers 数据集，系统比较 ResNet baseline、ImageNet 预训练与从零训练、SE/CBAM 注意力模块、ViT/Swin Transformer 以及 ConvNeXt 等现代卷积网络；最终 ConvNeXt-Tiny 在 384px 输入和 10 个随机种子下取得 \accpm{95.60}{0.61} 的测试准确率。车辆检测实验使用 YOLOv8s 在道路车辆数据集上训练检测器，验证集 mAP50 为 0.520，并结合 ByteTrack 完成跟踪 ID 显示、越线计数和遮挡失败分析。语义分割实验从零实现轻量 U-Net，在 Stanford Background / ICCV09 风格数据上比较 Cross-Entropy、Dice 与组合损失，组合损失取得最高验证集 mIoU 0.6531。实验结果表明，预训练特征、注意力机制、输入分辨率、检测稳定性和区域重叠损失都会显著影响视觉识别系统的最终泛化性能。
 \end{abstract}
 
 \section{引言}
@@ -669,22 +669,23 @@ ID 20 跳变的主要原因在于检测缺失和轨迹关联同时失效。ByteT
 
 类别跳变则更多来自检测器而非 tracker。ByteTrack 主要维护轨迹身份，类别标签仍由每帧 YOLO 检测头给出；当红色 SUV 占据画面主体、白车局部特征被遮挡或被邻近车辆污染时，分类头容易受到干扰。类别级指标也支持这一点：car 的 mAP50 为 0.790，而 suv 只有 0.188，说明模型对 SUV 相关边界的判别更不稳定。该现象说明检测与跟踪并不是两个完全独立的环节：检测器如果在遮挡、远距离和类别相似情况下不稳定，后续轨迹关联就会失去可靠输入。实际系统中可以通过提高检测器召回率、调节 ByteTrack 的匹配阈值、加入运动模型约束或进行摄像机场景标定来缓解该问题。
 
+
 \section{语义分割实验}
 
 \subsection{数据集与 U-Net 结构}
 
-语义分割实验使用 Stanford Background / ICCV09 风格数据，使用 \code{labels/*.regions.txt} 作为语义标签，共 8 类：sky、tree、road、grass、water、building、mountain、foreground\_object。与图像分类和目标检测不同，语义分割需要为每一个有效像素预测类别，因此模型既要理解全局场景语义，也要恢复局部边界和区域形状。标签中的负数像素表示未知区域，训练时统一映射为 \code{ignore\_index = 255}，损失和指标计算时忽略这些像素，避免未知标注干扰模型学习。
+语义分割实验使用 \code{iccv09Data} 中的 \code{labels/*.regions.txt} 作为语义标签，共包含 8 个类别：\code{sky}、\code{tree}、\code{road}、\code{grass}、\code{water}、\code{building}、\code{mountain} 和 \code{foreground\_object}。与图像分类和目标检测不同，语义分割需要为每一个有效像素预测类别，因此模型既要理解全局场景语义，也要恢复局部边界和区域形状。标签中的负数像素表示未知区域，训练时统一映射为 \code{ignore\_index = 255}，损失与指标统计时忽略这些像素。实验中输入图像统一缩放为 \(320 \times 240\)，并使用固定随机种子从全部样本中随机抽取 15\% 作为验证集。
 
-图 \ref{fig:segmentation-dataset-example} 给出了输入图像与语义标签样例。标签不再使用检测任务中的矩形框，而是为每个有效像素分配语义类别；同一幅图像中同时包含天空、树木、道路、建筑和前景目标等区域。可以看到，天空、建筑、道路等大面积类别在像素数量上占据主导，而 foreground\_object 等小区域面积很小，边界也更容易受分辨率和下采样影响。因此，分割实验不能只依赖 pixel accuracy，还需要使用 mIoU 和 per-class IoU 衡量小类别和区域边界的恢复质量。
+图 \ref{fig:segmentation-dataset-example} 给出了输入图像与语义标签样例。可以看到，天空、道路和建筑等大面积类别占据了多数像素，而 \code{foreground\_object}、\code{mountain} 等类别面积较小，更容易受分辨率和下采样影响。因此，分割实验不能只依赖 pixel accuracy，还需要使用 \code{mIoU} 和 per-class IoU 来衡量区域边界和小类别恢复质量。
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.88\textwidth]{../tasks/task3_semantic_segmentation/report_figures/segmentation_dataset_label_example.png}
-    \caption{Stanford Background / ICCV09 风格语义标签样例}
+    \includegraphics[width=0.88\textwidth]{../tasks/task3_semantic_segmentation/outputs/segmentation_dataset_label_example.png}
+    \caption{语义分割数据与标签样例}
     \label{fig:segmentation-dataset-example}
 \end{figure}
 
-模型采用手写轻量 U-Net，包括编码器下采样、瓶颈层特征提取、解码器上采样、skip connection 和最终 \code{1x1 Conv} 像素分类头。编码器每一级使用两个 \(3\times3\) 卷积、BatchNorm 和 ReLU 组成的 ConvBlock，并通过 max pooling 降低空间分辨率；解码器使用转置卷积逐级上采样，并与对应编码层特征拼接。U-Net 的 skip connection 能将浅层空间细节直接传递到解码阶段，适合语义分割中边界和局部区域恢复。
+模型采用手写轻量 \code{U-Net}，包括编码器下采样路径、瓶颈层特征提取、解码器上采样、\code{Skip Connection} 和最终 \code{1x1 Conv} 像素分类头。编码器逐层降低空间分辨率、提取高层语义信息；解码器逐层恢复分辨率并结合浅层特征，从而兼顾整体语义理解和边界细节恢复。
 
 \begin{table}[H]
     \centering
@@ -699,7 +700,7 @@ ID 20 跳变的主要原因在于检测缺失和轨迹关联同时失效。ByteT
         Encoder 3 & MaxPool + ConvBlock & 128 \\
         Encoder 4 & MaxPool + ConvBlock & 256 \\
         Bottleneck & MaxPool + ConvBlock & 512 \\
-        Decoder & Transposed Conv + skip connection & 256, 128, 64, 32 \\
+        Decoder & Transposed Conv + Skip Connection & 256, 128, 64, 32 \\
         Head & \(1\times1\) Conv & 8 classes \\
         \bottomrule
     \end{tabular}
@@ -714,12 +715,13 @@ ID 20 跳变的主要原因在于检测缺失和轨迹关联同时失效。ByteT
         Setting & Value \\
         \midrule
         Model & U-Net \\
-        Input size & \(256 \times 256\) \\
+        Input size & \(320 \times 240\) \\
         Epochs & 100 \\
         Batch size & 8 \\
         Learning rate & \(3\times10^{-4}\) \\
         Optimizer & AdamW \\
         Weight decay & \(1\times10^{-4}\) \\
+        Validation split & Random 15\% \\
         Seed & 42 \\
         \bottomrule
     \end{tabular}
@@ -728,32 +730,27 @@ ID 20 跳变的主要原因在于检测缺失和轨迹关联同时失效。ByteT
 \subsection{损失函数设计}
 
 实验比较三种损失函数配置：
-
 \begin{itemize}
     \item Cross-Entropy Loss：逐像素多分类监督，训练稳定；
-    \item 手写 Soft Dice Loss：直接优化预测区域与真实区域的重叠程度；
+    \item 手写 Dice Loss：直接优化预测区域与真实区域的重叠程度；
     \item Cross-Entropy + Dice：兼顾像素级分类稳定性与区域级重叠优化。
 \end{itemize}
 
-交叉熵损失对每一个有效像素进行多分类监督，其形式为
-
+交叉熵损失对每个有效像素进行多分类监督，其形式为
 \begin{equation}
     \mathcal{L}_{CE} = - \frac{1}{|\Omega|}\sum_{i \in \Omega}\log p_{i,y_i},
 \end{equation}
-
-其中 \(\Omega\) 表示非忽略像素集合，\(y_i\) 为像素 \(i\) 的真实类别，\(p_{i,y_i}\) 为模型对真实类别的预测概率。交叉熵训练稳定，能够直接优化逐像素分类正确率，但当类别面积差异较大时，大面积类别会在损失中占据更高权重。
+其中 \(\Omega\) 表示非忽略像素集合，\(y_i\) 为像素 \(i\) 的真实类别，\(p_{i,y_i}\) 为模型对真实类别的预测概率。交叉熵训练稳定，但当类别面积差异较大时，大面积类别会在损失中占据更高权重。
 
 Dice 系数直接衡量预测区域和真实区域的重叠程度。实验中手写实现多类别 Soft Dice Loss：先对 logits 做 softmax，再将标签转换为 one-hot 表示，并用 \code{ignore\_index} mask 去除未知像素。对第 \(c\) 类，Dice 系数为
-
 \begin{equation}
     Dice_c = \frac{2\sum_i p_{i,c}g_{i,c} + \epsilon}{\sum_i p_{i,c} + \sum_i g_{i,c} + \epsilon},
 \end{equation}
-
-最终损失为 \(1-\frac{1}{C}\sum_c Dice_c\)。由于 Dice Loss 直接优化预测区域和真实区域的重叠程度，它通常比单纯逐像素交叉熵更关注区域级覆盖质量，尤其适合类别不均衡或小区域类别较多的分割场景。组合损失使用 \(\mathcal{L}_{CE}+\mathcal{L}_{Dice}\)，希望同时保留交叉熵的分类稳定性和 Dice 的区域重叠优化能力。
+最终损失写为 \(1-\frac{1}{C}\sum_c Dice_c\)。组合损失使用 \(\mathcal{L}_{CE}+\mathcal{L}_{Dice}\)，希望同时保留交叉熵的分类稳定性和 Dice 的区域重叠优化能力。
 
 \subsection{分割结果}
 
-三种损失函数在验证集上的结果如表 \ref{tab:segmentation-loss-results} 所示。Dice Loss 在验证集 mIoU 上最高，说明直接优化区域重叠对该数据集更有帮助；CE+Dice 的 pixel accuracy 最高，但 mIoU 略低于纯 Dice，说明它对大面积类别更稳定，而对小类区域的重叠优化略弱。单独使用 Cross-Entropy 的 pixel accuracy 与另外两组接近，但 mIoU 明显偏低，说明只看像素准确率会掩盖类别不均衡带来的问题。
+三种损失函数在验证集上的最佳结果如表 \ref{tab:segmentation-loss-results} 所示。当前实验中，\textbf{Cross-Entropy + Dice} 取得了最高的验证集 \code{mIoU=0.6531}；Dice Loss 次之，为 0.6477；单独使用 Cross-Entropy 为 0.6436。三者的 pixel accuracy 都较高，但 \code{mIoU} 的差异更能反映小类别与边界区域的恢复质量。
 
 \begin{table}[H]
     \centering
@@ -764,117 +761,122 @@ Dice 系数直接衡量预测区域和真实区域的重叠程度。实验中手
         \toprule
         Loss & Best epoch & Best Val mIoU & Best Val Pixel Acc. \\
         \midrule
-        Cross-Entropy & 90 & 0.2587 & 0.7667 \\
-        Dice & 72 & 0.3055 & 0.7671 \\
-        Cross-Entropy + Dice & 90 & 0.3027 & 0.7748 \\
+        Cross-Entropy & 58 & 0.6436 & 0.8432 \\
+        Dice & 83 & 0.6477 & 0.8446 \\
+        Cross-Entropy + Dice & 66 & 0.6531 & 0.8489 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\subsubsection{单组训练曲线分析}
-
-除总体对比曲线外，每一种损失函数的单独训练过程也能反映不同优化目标的特点。图 \ref{fig:segmentation-ce-curves} 展示了 Cross-Entropy 的训练曲线。该组实验的训练 loss 持续下降，训练 mIoU 在后期升至 0.40 左右，但验证 mIoU 在 0.23--0.26 附近波动，最佳验证 mIoU 为 0.2587，出现在第 90 个 epoch。与此同时，验证 loss 在第 40 个 epoch 左右已经达到较低值，之后反而上升。这说明模型继续拟合训练集时，验证集区域重叠质量并没有同步提升；交叉熵更直接优化逐像素分类概率，容易在大面积类别上取得较高像素准确率，但对小区域类别和类别边界的 mIoU 提升有限。
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.86\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/ce/training_curves.png}
-    \caption{Cross-Entropy 单组训练曲线}
-    \label{fig:segmentation-ce-curves}
-\end{figure}
-
-图 \ref{fig:segmentation-dice-curves} 展示了 Dice Loss 的训练过程。Dice Loss 的验证 mIoU 在中期持续上升，并在第 72 个 epoch 达到 0.3055，是三组实验中最高的 mIoU。后期验证 loss 仍有下降，但验证 mIoU 下降到 0.25 左右，说明 Soft Dice 损失值与最终硬标签 mIoU 并不完全单调一致，模型选择时仍需要以验证 mIoU 作为主要依据。与 Cross-Entropy 相比，Dice Loss 明显提升了 tree、road、grass、building 和 foreground\_object 等类别的 IoU，说明直接优化区域重叠有助于缓解像素面积不均衡。
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.86\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/dice/training_curves.png}
-    \caption{Dice Loss 单组训练曲线}
-    \label{fig:segmentation-dice-curves}
-\end{figure}
-
-图 \ref{fig:segmentation-combo-curves} 展示了 Cross-Entropy + Dice 的训练过程。组合损失的训练 mIoU 上升最快，最终训练 mIoU 接近 0.49，验证集最佳 mIoU 为 0.3027，略低于纯 Dice，但 pixel accuracy 最高，达到 0.7748。该结果说明组合损失确实增强了整体像素分类稳定性，尤其对大面积区域更友好；但当 CE 与 Dice 简单等权相加时，交叉熵项仍会把一部分优化重心拉回高频像素类别，因此 mIoU 没有超过纯 Dice。后期训练曲线还显示出训练集和验证集之间的差距，说明该轻量 U-Net 在 100 个 epoch 内已经出现一定过拟合。
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.86\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/combo/training_curves.png}
-    \caption{Cross-Entropy + Dice 单组训练曲线}
-    \label{fig:segmentation-combo-curves}
-\end{figure}
-
-为了进一步分析不同损失函数对各类别的影响，表 \ref{tab:segmentation-per-class-iou} 给出了验证集 per-class IoU。Cross-Entropy 在 sky 上表现很好，但 road 的 IoU 为 0，说明模型几乎没有学到该类别的有效区域；Dice Loss 显著提升 tree、road、grass、building 和 foreground\_object 等类别的 IoU，因此 mIoU 最高。CE+Dice 在 sky、grass、water 和 mountain 上较强，并取得最高 pixel accuracy，但 tree、road 和 building 的平均表现略弱于纯 Dice，因此总体 mIoU 略低。
+为了进一步分析不同损失函数对各类别的影响，表 \ref{tab:segmentation-per-class-iou} 给出了验证集 per-class IoU。可以看到，\code{sky}、\code{road} 和 \code{building} 是相对容易的类别，而 \code{mountain} 是最难的类别。组合损失在大多数类别上都取得了最优或接近最优的表现，因此整体 \code{mIoU} 最高。
 
 \begin{table}[H]
     \centering
     \caption{三种损失函数的 per-class IoU}
     \label{tab:segmentation-per-class-iou}
-    \small
-    \begin{tabular}{lccc}
+    \scriptsize
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{lccccccccc}
         \toprule
-        类别 & Cross-Entropy & Dice & \shortstack{Cross-Entropy\\+ Dice} \\
+        Method & sky & tree & road & grass & water & building & mountain & foreground\_object & Val mIoU \\
         \midrule
-        sky & 0.8540 & 0.8452 & 0.8597 \\
-        tree & 0.2010 & 0.3686 & 0.3020 \\
-        road & 0.0000 & 0.2163 & 0.1658 \\
-        grass & 0.1622 & 0.2070 & 0.2099 \\
-        water & 0.1190 & 0.0626 & 0.1541 \\
-        building & 0.4399 & 0.4585 & 0.4349 \\
-        mountain & 0.1164 & 0.0793 & 0.1184 \\
-        foreground\_object & 0.1769 & 0.2060 & 0.1768 \\
+        Cross-Entropy & 0.8623 & 0.6661 & 0.8637 & 0.5477 & 0.6559 & 0.7384 & 0.2066 & 0.6077 & 0.6436 \\
+        Dice & 0.8655 & 0.6631 & 0.8602 & 0.5352 & 0.6490 & 0.7327 & 0.2670 & 0.6093 & 0.6477 \\
+        Cross-Entropy + Dice & 0.8745 & 0.6686 & 0.8654 & 0.5641 & 0.6605 & 0.7458 & 0.2333 & 0.6124 & 0.6531 \\
         \bottomrule
-    \end{tabular}
+    \end{tabular}%
+    }
 \end{table}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.92\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/miou_loss_comparison.png}
-    \caption{三种损失函数的 mIoU 与 loss 对比}
-\end{figure}
+\subsubsection{单组训练曲线与总体对比}
+
+图 \ref{fig:segmentation-miou-compare} 给出了三种损失函数在验证集上的 \code{mIoU} 对比曲线。Cross-Entropy 在前期收敛较快，但后期提升有限；Dice 在中后期继续改善区域重叠质量；组合损失则在稳定性和最终效果之间取得了更好的平衡，最终达到最高验证集 \code{mIoU}。
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.92\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/confusion_matrix_comparison.png}
-    \caption{三种损失函数的混淆矩阵对比}
+    \includegraphics[width=0.88\textwidth]{../tasks/task3_semantic_segmentation/runs/val_miou_comparison.png}
+    \caption{三种损失函数的验证集 mIoU 对比曲线}
+    \label{fig:segmentation-miou-compare}
 \end{figure}
+
+图 \ref{fig:segmentation-training-curves} 展示了三组实验各自的训练曲线。三种方法都能稳定收敛，但组合损失在训练集和验证集两侧都表现出更好的综合平衡性。
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.96\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/0000382_prediction_comparison.png}
-    \caption{样例预测对比}
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/ce/training_curves.png}
+        \caption{Cross-Entropy}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/dice/training_curves.png}
+        \caption{Dice}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/combo/training_curves.png}
+        \caption{Cross-Entropy + Dice}
+    \end{subfigure}
+    \caption{三种损失函数的单组训练曲线}
+    \label{fig:segmentation-training-curves}
 \end{figure}
 
-分割实验的可视化来源为三组损失函数训练后的 history、混淆矩阵和样例预测输出，并由统一对比脚本汇总生成。这样可以同时观察数值曲线、类别混淆和具体图像上的区域恢复效果，避免只根据单张预测图判断损失函数优劣。
+图 \ref{fig:segmentation-confusion-matrices} 给出了三组最佳模型对应的混淆矩阵。可以看出，\code{sky} 和 \code{building} 的识别最稳定，而 \code{mountain}、\code{water} 和部分前景目标更容易与相邻区域混淆，这也解释了这些类别 IoU 偏低的原因。
 
-曲线对比显示，Dice Loss 在中后期达到最高 mIoU，但其训练过程并非始终在 pixel accuracy 上占优；CE+Dice 的 pixel accuracy 最高，说明组合损失更容易提高大面积区域的逐像素分类正确率。混淆矩阵进一步显示，sky 和 building 是相对稳定的类别，而 road、water、mountain 等类别更容易与周围场景混淆。
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/ce/best_confusion_matrix.png}
+        \caption{Cross-Entropy}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/dice/best_confusion_matrix.png}
+        \caption{Dice}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/combo/best_confusion_matrix.png}
+        \caption{Cross-Entropy + Dice}
+    \end{subfigure}
+    \caption{三种损失函数对应的最佳混淆矩阵}
+    \label{fig:segmentation-confusion-matrices}
+\end{figure}
 
 \subsubsection{样例预测分析}
 
-图 \ref{fig:segmentation-single-predictions} 单独列出了样本 \code{0000382} 在三种损失函数下的预测结果。该样本同时包含天空、建筑、道路/地面、树木和前景行人，能够较直观地观察模型对大面积区域和小目标区域的处理差异。
+图 \ref{fig:segmentation-single-predictions} 单独列出了样本 \code{0000382} 在三种损失函数下的预测结果。该样本同时包含天空、建筑、道路/地面、树木和前景目标，能够较直观地观察模型对大面积区域与小目标区域的处理差异。Cross-Entropy 更容易偏向主导类别；Dice 在局部区域连续性上更好；组合损失在整体结构稳定性和小区域恢复之间取得了较好的折中。
 
 \begin{figure}[H]
     \centering
     \begin{subfigure}{0.31\textwidth}
-        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/0000382_ce.png}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/outputs/0000382_ce.png}
         \caption{Cross-Entropy}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.31\textwidth}
-        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/0000382_dice.png}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/outputs/0000382_dice.png}
         \caption{Dice}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.31\textwidth}
-        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/runs/loss_comparison/0000382_combo.png}
+        \includegraphics[width=\textwidth]{../tasks/task3_semantic_segmentation/outputs/0000382_combo.png}
         \caption{Cross-Entropy + Dice}
     \end{subfigure}
-    \caption{样例预测的单组结果}
+    \caption{样本 \code{0000382} 在三种损失函数下的预测结果}
     \label{fig:segmentation-single-predictions}
 \end{figure}
 
-Cross-Entropy 的预测更容易偏向主导类别，天空和建筑等大面积区域能够形成主要结构，但道路和树木边界不够稳定，小面积 foreground\_object 也容易被背景类别吞并。这与表 \ref{tab:segmentation-per-class-iou} 中 road 的 IoU 为 0、tree 的 IoU 仅为 0.2010 相互印证，说明逐像素交叉熵在类别不均衡时会优先优化占比更大的区域。
+\subsection{结果分析与结论}
 
-Dice Loss 的预测在区域整体性上更好，建筑主体、道路区域和前景目标之间的分界相对更连续。它没有取得最高 pixel accuracy，但在 tree、road、building 和 foreground\_object 上的 IoU 均优于 Cross-Entropy，因此整体 mIoU 最高。该现象说明，对于语义分割任务，区域重叠质量比单个像素的平均分类正确率更能反映模型是否真正恢复了目标形状。
+综合定量结果和可视化结果，可以得到以下结论：
+\begin{itemize}
+    \item 仅使用 Cross-Entropy 能够提供稳定的像素级分类能力，但对小类别和边界区域的优化相对不足；
+    \item Dice Loss 更直接面向区域重叠优化，因此在类别不平衡场景下表现更强；
+    \item Cross-Entropy + Dice 在本实验设置下取得了最高的验证集 \code{mIoU=0.6531}，说明组合损失在稳定性和区域优化之间达到了更优折中。
+\end{itemize}
 
-组合损失的预测介于二者之间：大面积区域更稳定，pixel accuracy 也最高，但部分类别边界仍受到交叉熵项影响，没有完全达到纯 Dice 的小类恢复效果。若进一步改进，可以尝试调节 \(\mathcal{L}_{CE}\) 与 \(\mathcal{L}_{Dice}\) 的权重，例如降低交叉熵权重或引入类别权重，使组合损失在保持训练稳定性的同时，更关注 road、water、mountain 和 foreground\_object 等低 IoU 类别。
-
+因此，在当前数据划分和训练配置下，\textbf{Cross-Entropy + Dice 是本实验中效果最好的损失函数配置}。
 \section{综合讨论}
 
 三类实验体现了不同视觉问题的主要难点。花卉分类实验中，训练集每类只有 10 张图像，模型性能高度依赖预训练特征。ResNet 从零训练与 ImageNet 预训练之间超过 34 个百分点的差距说明，小样本细粒度分类很难仅依靠目标数据集本身学习出稳健特征。注意力模块能进一步提升 CNN baseline，但收益小于更强 backbone 和更高分辨率输入带来的增益。

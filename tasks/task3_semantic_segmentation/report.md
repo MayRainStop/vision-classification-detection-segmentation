@@ -1,12 +1,12 @@
 # Task 3 Report
-## 吉张林 25110980010
+## 吉张杰 25110980010
 
 ## 1. 实验目标
 
-
+本实验对应 HW2 的 Task 3，目标如下：
 
 1. 从零搭建 `U-Net` 图像分割训练工程。
-2. 在 `iccv09Data` 上完成像素级语义分割训练。
+2. 在 `iccv09Data` 数据集上完成像素级语义分割训练。
 3. 手动实现 `Dice Loss`。
 4. 分别使用以下三种损失函数配置训练模型，并比较验证集 `mIoU`：
    - `Cross-Entropy Loss`
@@ -26,43 +26,43 @@
 7. `mountain`
 8. `foreground_object`
 
-预处理策略如下：
+数据和标签处理方式如下：
 
-- 输入图像统一缩放为 `256 x 256`
+- 输入图像统一缩放为 `320 x 240`
 - 标签中的负数像素表示未知区域
 - 未知区域统一映射为 `ignore_index = 255`
-- 损失计算时忽略未知像素
+- 损失计算与指标统计时忽略未知像素
+- 采用固定随机种子 `42`，随机抽取 `15%` 样本作为验证集，其余 `85%` 作为训练集
 
 ## 3. 模型结构
 
-模型采用手写轻量 `U-Net`，包含：
+模型采用手写 `U-Net`，包含以下组成部分：
 
 - 编码器下采样路径
-- 瓶颈层特征提取
 - 解码器上采样路径
 - `Skip Connection`
-- 最终 `1x1 Conv` 输出像素级类别预测
+- 最后 `1x1 Conv` 输出像素级分类结果
 
-这种结构兼顾高层语义信息与浅层空间细节，适合本任务的像素级分割。
+该结构能够同时利用高层语义信息和浅层空间细节，适合像素级语义分割任务。
 
 ## 4. 损失函数工程
 
 ### 4.1 Cross-Entropy Loss
 
-交叉熵损失对每个像素做多分类监督，优点是收敛稳定、训练直接，但在前景/背景极不平衡的情况下，容易偏向大面积类别。
+交叉熵损失对每个像素做多分类监督，优点是训练稳定、优化直接，但在类别不平衡情况下容易偏向像素数较多的大类别。
 
 ### 4.2 手写 Dice Loss
 
-本实验在 `src/segmentation/losses.py` 中手动实现了多类 `SoftDiceLoss`。其基本流程为：
+本实验在 `src/segmentation/losses.py` 中手动实现多类 `Dice Loss`。其核心流程如下：
 
 1. 对网络输出做 `softmax`
 2. 将标签转换为 `one-hot`
-3. 去除 `ignore_index` 像素
+3. 忽略 `ignore_index` 对应像素
 4. 计算预测区域与真实区域的交集和并集
 5. 逐类计算 Dice 系数并取平均
-6. 以 `1 - mean(dice)` 作为损失
+6. 使用 `1 - mean(dice)` 作为最终损失
 
-Dice Loss 直接优化区域重叠程度，因此通常对小目标和长尾类别更友好。
+Dice Loss 直接优化区域重叠程度，因此通常对小区域类别和类别不平衡问题更友好。
 
 ### 4.3 组合损失
 
@@ -72,13 +72,12 @@ Dice Loss 直接优化区域重叠程度，因此通常对小目标和长尾类�
 L = L_ce + L_dice
 ```
 
-其目的在于同时利用：
+其中：
 
-- `Cross-Entropy` 的像素级分类稳定性
-- `Dice Loss` 的区域级重叠优化能力
+- `L_ce` 负责稳定像素级分类
+- `L_dice` 负责优化区域重叠质量
 
 ## 5. 实验配置
-
 
 主要训练配置如下：
 
@@ -86,134 +85,113 @@ L = L_ce + L_dice
 |---|---|
 | Model | U-Net |
 | Dataset | `iccv09Data (regions)` |
-| Input Size | `256 x 256` |
+| Input Size | `320 x 240` |
 | Epochs | `100` |
 | Batch Size | `8` |
 | Learning Rate | `3e-4` |
 | Optimizer | `AdamW` |
 | Weight Decay | `1e-4` |
+| Validation Split | `15%` |
 | Seed | `42` |
 
 ## 6. 定量结果
 
-
-
-三组损失配置在验证集上的最佳结果如下：
+三组损失函数在验证集上的最佳结果如下：
 
 | Loss | Best Epoch | Best Val mIoU | Best Val Pixel Acc |
 |---|---:|---:|---:|
-| Cross-Entropy | 90 | 0.2587 | 0.7667 |
-| Dice | 72 | 0.3055 | 0.7671 |
-| Cross-Entropy + Dice | 90 | 0.3027 | 0.7748 |
+| Cross-Entropy | 58 | 0.6436 | 0.8432 |
+| Dice | 83 | 0.6477 | 0.8446 |
+| Cross-Entropy + Dice | 66 | 0.6531 | 0.8489 |
 
-结果排名：
+结果排序如下：
 
-1. `Dice Loss`: `0.3055`
-2. `Cross-Entropy + Dice`: `0.3027`
-3. `Cross-Entropy Loss`: `0.2587`
+1. `Cross-Entropy + Dice`: `0.6531`
+2. `Dice`: `0.6477`
+3. `Cross-Entropy`: `0.6436`
 
-可以看出，在本次实验中，纯 `Dice Loss` 在验证集 `mIoU` 上表现最好，而组合损失在 `Pixel Accuracy` 上最高。
+可以看出，三组方法都取得了较好的分割效果，其中组合损失获得了最高的验证集 `mIoU`。
 
-## 7. 三组损失对比曲线
+### 6.1 各类别 IoU 对比
 
-总对比图如下：
+三种方法在各自最佳 epoch 下的各类别 IoU 与验证集 `mIoU` 如下：
 
-![mIoU and Loss Comparison](runs/loss_comparison/miou_loss_comparison.png)
+| Method | sky | tree | road | grass | water | building | mountain | foreground_object | Val mIoU |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Cross-Entropy | 0.8623 | 0.6661 | 0.8637 | 0.5477 | 0.6559 | 0.7384 | 0.2066 | 0.6077 | 0.6436 |
+| Dice | 0.8655 | 0.6631 | 0.8602 | 0.5352 | 0.6490 | 0.7327 | 0.2670 | 0.6093 | 0.6477 |
+| Cross-Entropy + Dice | 0.8745 | 0.6686 | 0.8654 | 0.5641 | 0.6605 | 0.7458 | 0.2333 | 0.6124 | 0.6531 |
 
+从表中可以看到：
 
+- `sky`、`road`、`building` 是较容易学习的类别，三种方法都表现较好
+- `mountain` 是最难的类别，IoU 明显低于其他类别
+- 组合损失在大多数类别上都取得了最优或接近最优的结果，因此整体 `mIoU` 最高
 
-分析：
+## 7. 三组损失曲线对比
 
-- `CE` 曲线整体最弱，最佳 `mIoU` 明显低于另外两组。
-- `Dice` 曲线在中后期达到最高峰值，说明它对区域重叠优化更有效。
-- `CE + Dice` 的 `mIoU` 也明显优于纯 `CE`，但略低于纯 `Dice`。
+三种损失函数在验证集上的 `mIoU` 对比如下：
 
-## 8. 混淆矩阵对比
+![Validation mIoU Comparison](runs/val_miou_comparison.png)
 
-总对比图如下：
+分析如下：
 
-![Confusion Matrix Comparison](runs/loss_comparison/confusion_matrix_comparison.png)
+- `Cross-Entropy` 收敛速度较快，但最终上限略低
+- `Dice` 在中后期持续提升，说明其对区域重叠优化更有效
+- `Cross-Entropy + Dice` 兼顾了稳定性和区域优化能力，最终达到最高 `mIoU`
 
+## 8. 混淆矩阵与训练输出
 
-分析：
+每组实验目录中均保存了：
 
-- `sky` 和 `building` 类整体较稳定，是相对容易识别的类别。
-- `road`、`water`、`mountain` 等类别仍有较明显混淆。
-- `Dice` 在若干小类上的召回有所改善，这也是其 `mIoU` 更高的原因之一。
+- `best.pt`
+- `last.pt`
+- `history.json`
+- `history.csv`
+- `training_curves.png`
+- `best_confusion_matrix.png`
 
-## 9. 样例预测对比
+这些文件可用于进一步分析各类别的混淆情况与训练趋势。
 
-统一对比图如下：
+## 9. 样例预测结果
 
-![Prediction Comparison](runs/loss_comparison/0000382_prediction_comparison.png)
+以样例图像 `0000382.jpg` 为例，三种方法的预测结果保存在：
 
+- `outputs/0000382_ce.png`
+- `outputs/0000382_dice.png`
+- `outputs/0000382_combo.png`
 
+从可视化结果可以直观看出：
 
-该图展示了样本 `0000382` 在三种损失配置下的预测结果对比。
-
-### 9.1 Cross-Entropy 预测结果
-
-![CE Prediction](runs/loss_comparison/0000382_ce.png)
-
-
-
-观察可以发现，纯 `CE` 的预测较容易偏向主类，部分细碎区域和边界信息恢复较弱。
-
-### 9.2 Dice 预测结果
-
-![Dice Prediction](runs/loss_comparison/0000382_dice.png)
-
-
-`Dice Loss` 的预测区域整体更完整，细小区域的连续性也更好，这与其更高的 `mIoU` 结果是一致的。
-
-### 9.3 Cross-Entropy + Dice 预测结果
-
-![Combo Prediction](runs/loss_comparison/0000382_combo.png)
-
-
-
-组合损失的预测在整体结构上比较稳定，边界表现介于纯 `CE` 和纯 `Dice` 之间，同时像素准确率最高。
+- `Cross-Entropy` 对主类区域拟合较好，但在少数类边界上略弱
+- `Dice` 对部分小区域和结构连续性更友好
+- 组合损失在整体结构完整性与局部边界质量之间取得了较好的平衡
 
 ## 10. 分析与讨论
 
-### 10.1 为什么 Dice Loss 最好
+### 10.1 为什么组合损失效果最好
 
-本任务存在明显的前景/背景像素不平衡问题。相比纯交叉熵，`Dice Loss` 直接优化预测区域与真实区域的重叠，因此：
+组合损失同时利用了：
 
-- 更关注分割区域质量
-- 对小面积类别更敏感
-- 能缓解大类压制小类的问题
+- `Cross-Entropy` 的稳定像素级分类能力
+- `Dice Loss` 对区域重叠更敏感的优势
 
-这也是为什么 `Dice Loss` 在本实验中取得了最高的验证集 `mIoU = 0.3055`。
+因此在本实验中，组合损失能够在保持整体分类稳定的同时，提高区域级分割质量，最终取得最高 `mIoU = 0.6531`。
 
-### 10.2 为什么组合损失略低于纯 Dice
+### 10.2 Dice Loss 的优势
 
-虽然组合损失理论上更稳妥，但当前实验中：
+`Dice Loss` 的 `mIoU = 0.6477`，略低于组合损失，但仍高于单独使用 `Cross-Entropy`。这说明在前景/背景或类别像素比例不平衡的分割任务中，Dice Loss 对优化区域重叠质量更有帮助。
 
-- `Dice`: `0.3055`
-- `CE + Dice`: `0.3027`
+### 10.3 Cross-Entropy 的特点
 
-组合损失略低于纯 Dice，可能原因包括：
-
-1. 当前 `CE` 与 `Dice` 的权重比为 `1:1`，未必是最优比例。
-2. 交叉熵在部分样本上仍可能偏向大面积类别。
-3. 数据规模有限，最优损失形式对训练细节较敏感。
-
-不过组合损失取得了最高的 `Pixel Accuracy = 0.7748`，说明它在整体像素分类层面更稳。
-
-### 10.3 Cross-Entropy 的局限
-
-纯 `Cross-Entropy` 的最佳 `mIoU` 只有 `0.2587`，明显低于另外两组，这表明：
-
-- 逐像素分类正确率高，不一定意味着区域分割质量高
-- 在类别不平衡的分割任务中，单独使用交叉熵通常不够理想
+单独使用 `Cross-Entropy` 时，模型也能达到 `0.6436` 的验证集 `mIoU`，说明其在该任务上仍具有较好的基线能力，但相比另外两种损失，其对难类和区域重叠的优化能力略弱。
 
 ## 11. 结论
 
-最终结论如下：
+本实验从零实现了 `U-Net` 图像分割训练工程，并在 `iccv09Data` 上比较了三种损失函数。结果表明：
 
-- `Dice Loss` 在本实验中取得最高验证集 `mIoU`
-- `Cross-Entropy + Dice` 次之，但 `Pixel Accuracy` 最高
-- `Cross-Entropy Loss` 单独使用效果最弱
+- `Cross-Entropy + Dice` 取得了最高验证集 `mIoU = 0.6531`
+- `Dice` 次之，为 `0.6477`
+- `Cross-Entropy` 为 `0.6436`
 
-因此，在存在前景/背景像素不平衡的图像分割任务中，`Dice Loss` 或包含 `Dice` 的组合损失通常更适合。
+因此，在本实验所采用的数据划分和训练配置下，**组合损失 `Cross-Entropy + Dice` 是最优选择**。

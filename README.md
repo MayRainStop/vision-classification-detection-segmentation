@@ -46,7 +46,7 @@ PS: 目录中不包含放在网盘的大模型权重、原始大数据集和视�
 |     |- compare_losses.py
 |     |- predict.py
 |     |- report_figures/
-|     `- runs/loss_comparison/
+|     `- runs/
 |- pyproject.toml
 |- requirements.txt
 |- README.md
@@ -66,7 +66,7 @@ PS: 目录中不包含放在网盘的大模型权重、原始大数据集和视�
 - `tasks/task2_road_vehicle_detection/screenshots/`：遮挡和 ID switch 分析所用关键帧。
 - `tasks/task3_semantic_segmentation/`：语义分割任务代码、损失函数对比实验和结果整理。
 - `tasks/task3_semantic_segmentation/src/segmentation/`：U-Net、数据集读取、损失函数和指标实现。
-- `tasks/task3_semantic_segmentation/runs/loss_comparison/`：三种损失函数的训练曲线、mIoU 对比、混淆矩阵和样例预测图；其中 `best.pt` / `last.pt` 不放入 GitHub。
+- `tasks/task3_semantic_segmentation/runs/`：三种损失函数的训练曲线、mIoU 对比、混淆矩阵和样例预测图；其中 `best.pt` / `last.pt` 不放入 GitHub。
 
 ## 环境依赖
 
@@ -115,7 +115,7 @@ tasks/
 |     |- best.pt
 |     `- last.pt
 `- task3_semantic_segmentation/
-   `- runs/loss_comparison/
+   `- runs/
       |- ce/
       |  |- best.pt
       |  `- last.pt
@@ -177,23 +177,18 @@ python YOLOcount.py ^
 
 ## 如何运行语义分割实验
 
-运行以下命令可对比三种损失函数：
+本项目的语义分割实验使用 `U-Net` 在 `iccv09Data` 数据集上训练，并采用随机划分的 `85%` 训练集与 `15%` 验证集。三种损失函数可分别运行如下：
 
 ```bash
-cd tasks\task3_semantic_segmentation
-python compare_losses.py ^
-  --task regions ^
-  --epochs 100 ^
-  --batch-size 8 ^
-  --output-root runs/loss_comparison
+python train.py --data-root iccv09Data --task regions --loss-mode ce --epochs 100 --batch-size 8 --val-ratio 0.15 --seed 42 --output-dir runs/ce--amp
+python train.py --data-root iccv09Data --task regions --loss-mode dice --epochs 100 --batch-size 8 --val-ratio 0.15 --seed 42 --output-dir runs/dice --amp
+python train.py --data-root iccv09Data --task regions --loss-mode combo --ce-weight 1.0 --dice-weight 1.0 --epochs 100 --batch-size 8 --val-ratio 0.15 --seed 42 --output-dir runs/combo --amp
 ```
 
-也可以单独训练某一种损失函数：
+如需将三种损失函数的验证集 `mIoU` 曲线绘制到同一张图中，可基于各自的 `history.json` 生成对比图，结果保存为：
 
-```bash
-python train.py --task regions --loss-mode ce --epochs 100 --batch-size 8 --output-dir runs/regions_ce
-python train.py --task regions --loss-mode dice --epochs 100 --batch-size 8 --output-dir runs/regions_dice
-python train.py --task regions --loss-mode combo --epochs 100 --batch-size 8 --output-dir runs/regions_combo
+```text
+runs/val_miou_comparison.png
 ```
 
 ## 主要实验结果
@@ -212,8 +207,10 @@ mAP50 = 0.520
 mAP50-95 = 0.304
 
 Task 3: U-Net semantic segmentation
-best loss = Dice Loss
-best validation mIoU = 0.3055
+Cross-Entropy best validation mIoU = 0.6436
+Dice best validation mIoU = 0.6477
+Cross-Entropy + Dice best validation mIoU = 0.6531
+best loss = Cross-Entropy + Dice
 ```
 
 主要结果文件说明如下：
@@ -226,7 +223,8 @@ best validation mIoU = 0.3055
 - `tasks/task2_road_vehicle_detection/train_results/BoxPR_curve.png`、`BoxF1_curve.png`：检测阈值相关曲线。
 - `tasks/task2_road_vehicle_detection/train_results/confusion_matrix.png`：车辆检测混淆矩阵。
 - `tasks/task2_road_vehicle_detection/screenshots/`：视频跟踪遮挡分析关键帧。
-- `tasks/task3_semantic_segmentation/runs/loss_comparison/comparison_summary.json`：三种损失函数结果汇总。
-- `tasks/task3_semantic_segmentation/runs/loss_comparison/miou_loss_comparison.png`：三种损失函数的 mIoU 与 loss 对比。
-- `tasks/task3_semantic_segmentation/runs/loss_comparison/confusion_matrix_comparison.png`：三种损失函数的混淆矩阵对比。
-- `tasks/task3_semantic_segmentation/runs/loss_comparison/0000382_prediction_comparison.png`：样例预测对比图。
+- `runs/ce_random15/`：仅使用 Cross-Entropy Loss 的训练结果目录，包含 `best.pt`、`last.pt`、`history.json` 等文件。
+- `runs/dice_random15/`：仅使用 Dice Loss 的训练结果目录。
+- `runs/try_raw_random15_1_1/`：使用 `Cross-Entropy + Dice` 组合损失（`ce_weight=1.0, dice_weight=1.0`）的训练结果目录。
+- `runs/val_miou_three_way.png`：三种损失函数在验证集上的 `mIoU` 对比曲线。
+- `outputs/0000382_ce.png`、`outputs/0000382_dice.png`、`outputs/0000382_combo.png`：样例图像 `0000382.jpg` 在三种损失函数下的预测结果。
